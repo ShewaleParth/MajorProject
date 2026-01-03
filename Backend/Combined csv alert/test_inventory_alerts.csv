@@ -1,0 +1,2 @@
+item_id,product_name,current_stock,stock_status_pred,priority_pred,alert
+PRD001,Sample Product,100,Overstock,Medium,Future Restock Warning: Forecasted sales 300 exceed current stock 100

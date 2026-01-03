@@ -1,0 +1,33 @@
+# Models (Large files)
+Models/
+arima_models_dict.pkl
+*.pkl
+*.h5
+*.model
+
+# Dependencies
+**/node_modules/
+**/__pycache__/
+**/.venv/
+**/venv/
+**/env/
+
+# Environment Variables
+.env
+**/.env
+**/.env.*
+
+# Build artifacts
+**/dist/
+**/build/
+**/.vite/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

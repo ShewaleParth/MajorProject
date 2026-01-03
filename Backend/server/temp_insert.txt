@@ -1,0 +1,419 @@
+﻿// NEW PRODUCT-DEPOT API ENDPOINTS
+
+// Assign product to depot
+app.post('/api/products/:id/assign-depot', async (req, res) => {
+  try {
+    const { depotId, quantity } = req.body;
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    const depot = await Depot.findById(depotId);
+    if (!depot) {
+      return res.status(404).json({ message: 'Depot not found' });
+    }
+
+    // Remove from old depot if assigned
+    if (product.depotId) {
+      const oldDepot = await Depot.findById(product.depotId);
+      if (oldDepot) {
+        oldDepot.products = oldDepot.products.filter(
+          p => p.productId.toString() !== product._id.toString()
+        );
+        oldDepot.itemsStored = oldDepot.products.length;
+        oldDepot.currentUtilization -= product.depotQuantity;
+        await oldDepot.save();
+      }
+    }
+
+    // Assign to new depot
+    product.depotId = depotId;
+    product.depotName = depot.name;
+    product.depotQuantity = quantity || product.stock;
+
+    // Add to depot's products array
+    const existingProductIndex = depot.products.findIndex(
+      p => p.productId.toString() === product._id.toString()
+    );
+    
+    if (existingProductIndex >= 0) {
+      depot.products[existingProductIndex].quantity = product.depotQuantity;
+      depot.products[existingProductIndex].lastUpdated = new Date();
+    } else {
+      depot.products.push({
+        productId: product._id,
+        productName: product.name,
+        productSku: product.sku,
+        quantity: product.depotQuantity,
+        lastUpdated: new Date()
+      });
+    }
+
+    depot.itemsStored = depot.products.length;
+    depot.currentUtilization += product.depotQuantity;
+    depot.updatedAt = new Date();
+
+    await depot.save();
+    await product.save();
+
+    // Create transaction
+    const transaction = new Transaction({
+      productId: product._id,
+      productName: product.name,
+      productSku: product.sku,
+      transactionType: 'stock-in',
+      quantity: product.depotQuantity,
+      toDepot: depot.name,
+      toDepotId: depot._id,
+      previousStock: 0,
+      newStock: product.depotQuantity,
+      reason: 'Depot assignment',
+      performedBy: 'User'
+    });
+    await transaction.save();
+
+    // Emit WebSocket events
+    io.emit('product:depot-assigned', {
+      productId: product._id,
+      productName: product.name,
+      depotId: depot._id,
+      depotName: depot.name,
+      quantity: product.depotQuantity
+    });
+
+    io.emit('depot:stock-updated', {
+      depotId: depot._id,
+      depotName: depot.name,
+      currentUtilization: depot.currentUtilization,
+      itemsStored: depot.itemsStored
+    });
+
+    res.json({
+      message: 'Product assigned to depot successfully',
+      product: {
+        id: product._id,
+        depotId: product.depotId,
+        depotName: product.depotName,
+        depotQuantity: product.depotQuantity
+      }
+    });
+  } catch (error) {
+    console.error('Error assigning product to depot:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Transfer product between depots
+app.post('/api/products/:id/transfer', async (req, res) => {
+  try {
+    const { fromDepotId, toDepotId, quantity } = req.body;
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    const fromDepot = await Depot.findById(fromDepotId);
+    const toDepot = await Depot.findById(toDepotId);
+
+    if (!fromDepot || !toDepot) {
+      return res.status(404).json({ message: 'Depot not found' });
+    }
+
+    // Remove from source depot
+    const fromProductIndex = fromDepot.products.findIndex(
+      p => p.productId.toString() === product._id.toString()
+    );
+    
+    if (fromProductIndex >= 0) {
+      fromDepot.products[fromProductIndex].quantity -= quantity;
+      if (fromDepot.products[fromProductIndex].quantity <= 0) {
+        fromDepot.products.splice(fromProductIndex, 1);
+      }
+      fromDepot.itemsStored = fromDepot.products.length;
+      fromDepot.currentUtilization -= quantity;
+      await fromDepot.save();
+    }
+
+    // Add to destination depot
+    const toProductIndex = toDepot.products.findIndex(
+      p => p.productId.toString() === product._id.toString()
+    );
+    
+    if (toProductIndex >= 0) {
+      toDepot.products[toProductIndex].quantity += quantity;
+      toDepot.products[toProductIndex].lastUpdated = new Date();
+    } else {
+      toDepot.products.push({
+        productId: product._id,
+        productName: product.name,
+        productSku: product.sku,
+        quantity: quantity,
+        lastUpdated: new Date()
+      });
+    }
+
+    toDepot.itemsStored = toDepot.products.length;
+    toDepot.currentUtilization += quantity;
+    await toDepot.save();
+
+    // Update product
+    product.depotId = toDepotId;
+    product.depotName = toDepot.name;
+    product.depotQuantity = quantity;
+    await product.save();
+
+    // Create transaction
+    const transaction = new Transaction({
+      productId: product._id,
+      productName: product.name,
+      productSku: product.sku,
+      transactionType: 'transfer',
+      quantity: quantity,
+      fromDepot: fromDepot.name,
+      toDepot: toDepot.name,
+      fromDepotId: fromDepot._id,
+      toDepotId: toDepot._id,
+      previousStock: product.stock,
+      newStock: product.stock,
+      reason: 'Inter-depot transfer',
+      performedBy: 'User'
+    });
+    await transaction.save();
+
+    // Emit WebSocket events
+    io.emit('product:transferred', {
+      productId: product._id,
+      productName: product.name,
+      fromDepotId: fromDepot._id,
+      fromDepotName: fromDepot.name,
+      toDepotId: toDepot._id,
+      toDepotName: toDepot.name,
+      quantity: quantity
+    });
+
+    io.emit('depot:stock-updated', {
+      depotId: fromDepot._id,
+      depotName: fromDepot.name,
+      currentUtilization: fromDepot.currentUtilization,
+      itemsStored: fromDepot.itemsStored
+    });
+
+    io.emit('depot:stock-updated', {
+      depotId: toDepot._id,
+      depotName: toDepot.name,
+      currentUtilization: toDepot.currentUtilization,
+      itemsStored: toDepot.itemsStored
+    });
+
+    res.json({
+      message: 'Product transferred successfully',
+      transfer: {
+        productId: product._id,
+        from: fromDepot.name,
+        to: toDepot.name,
+        quantity: quantity
+      }
+    });
+  } catch (error) {
+    console.error('Error transferring product:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get product transactions
+app.get('/api/products/:id/transactions', async (req, res) => {
+  try {
+    const { limit = 50, type } = req.query;
+    const query = { productId: req.params.id };
+    
+    if (type) {
+      query.transactionType = type;
+    }
+
+    const transactions = await Transaction.find(query)
+      .sort({ timestamp: -1 })
+      .limit(parseInt(limit));
+
+    res.json({
+      transactions: transactions.map(t => ({
+        id: t._id,
+        transactionType: t.transactionType,
+        quantity: t.quantity,
+        fromDepot: t.fromDepot,
+        toDepot: t.toDepot,
+        previousStock: t.previousStock,
+        newStock: t.newStock,
+        reason: t.reason,
+        notes: t.notes,
+        performedBy: t.performedBy,
+        timestamp: t.timestamp
+      })),
+      total: transactions.length
+    });
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get detailed product view
+app.get('/api/products/:id/details', async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id).populate('depotId');
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Get transactions
+    const transactions = await Transaction.find({ productId: product._id })
+      .sort({ timestamp: -1 })
+      .limit(100);
+
+    // Calculate stock history (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const recentTransactions = await Transaction.find({
+      productId: product._id,
+      timestamp: { $gte: thirtyDaysAgo }
+    }).sort({ timestamp: 1 });
+
+    const stockHistory = [];
+    let currentStock = product.stock;
+    
+    // Work backwards from current stock
+    for (let i = recentTransactions.length - 1; i >= 0; i--) {
+      const t = recentTransactions[i];
+      stockHistory.unshift({
+        date: t.timestamp.toISOString().split('T')[0],
+        stock: t.newStock,
+        value: t.newStock * product.price
+      });
+      currentStock = t.previousStock;
+    }
+
+    // Calculate monthly stats
+    const monthlyStats = {};
+    transactions.forEach(t => {
+      const month = t.timestamp.toISOString().substring(0, 7);
+      if (!monthlyStats[month]) {
+        monthlyStats[month] = { month, stockIn: 0, stockOut: 0, avgStock: 0 };
+      }
+      
+      if (t.transactionType === 'stock-in' || t.transactionType === 'transfer') {
+        monthlyStats[month].stockIn += t.quantity;
+      } else if (t.transactionType === 'stock-out') {
+        monthlyStats[month].stockOut += t.quantity;
+      }
+    });
+
+    // Depot info
+    const depotInfo = product.depotId ? {
+      depotId: product.depotId._id || product.depotId,
+      depotName: product.depotName,
+      quantity: product.depotQuantity
+    } : null;
+
+    // Generate alerts
+    const alerts = [];
+    if (product.status === 'low-stock') {
+      alerts.push({
+        type: 'low-stock',
+        message: `Stock level is below reorder point (${product.reorderPoint})`,
+        severity: 'medium'
+      });
+    } else if (product.status === 'out-of-stock') {
+      alerts.push({
+        type: 'out-of-stock',
+        message: 'Product is out of stock',
+        severity: 'high'
+      });
+    } else if (product.status === 'overstock') {
+      alerts.push({
+        type: 'overstock',
+        message: 'Stock level is significantly above reorder point',
+        severity: 'low'
+      });
+    }
+
+    res.json({
+      product: {
+        id: product._id,
+        sku: product.sku,
+        name: product.name,
+        category: product.category,
+        stock: product.stock,
+        reorderPoint: product.reorderPoint,
+        supplier: product.supplier,
+        price: product.price,
+        status: product.status,
+        depotId: product.depotId,
+        depotName: product.depotName,
+        depotQuantity: product.depotQuantity
+      },
+      transactions: transactions.map(t => ({
+        id: t._id,
+        transactionType: t.transactionType,
+        quantity: t.quantity,
+        fromDepot: t.fromDepot,
+        toDepot: t.toDepot,
+        previousStock: t.previousStock,
+        newStock: t.newStock,
+        reason: t.reason,
+        performedBy: t.performedBy,
+        timestamp: t.timestamp
+      })),
+      stockHistory,
+      monthlyStats: Object.values(monthlyStats),
+      depotInfo,
+      alerts
+    });
+  } catch (error) {
+    console.error('Error fetching product details:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get all transactions
+app.get('/api/transactions', async (req, res) => {
+  try {
+    const { type, productId, depotId, limit = 100 } = req.query;
+    const query = {};
+    
+    if (type) query.transactionType = type;
+    if (productId) query.productId = productId;
+    if (depotId) {
+      query.$or = [{ fromDepotId: depotId }, { toDepotId: depotId }];
+    }
+
+    const transactions = await Transaction.find(query)
+      .sort({ timestamp: -1 })
+      .limit(parseInt(limit))
+      .populate('productId', 'name sku');
+
+    res.json({
+      transactions: transactions.map(t => ({
+        id: t._id,
+        productName: t.productName,
+        productSku: t.productSku,
+        transactionType: t.transactionType,
+        quantity: t.quantity,
+        fromDepot: t.fromDepot,
+        toDepot: t.toDepot,
+        previousStock: t.previousStock,
+        newStock: t.newStock,
+        reason: t.reason,
+        performedBy: t.performedBy,
+        timestamp: t.timestamp
+      })),
+      total: transactions.length
+    });
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});

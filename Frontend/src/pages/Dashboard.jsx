@@ -7,65 +7,56 @@ import {
 } from 'recharts';
 
 const Dashboard = () => {
-    const { metrics, chartData, transactions, loading, alerts, handleReorder } = useDashboardData();
+    const {
+        metrics,
+        chartData,
+        transactions,
+        loading,
+        alerts,
+        depots,
+        topSKUs,
+        selectedDepot,
+        setSelectedDepot,
+        handleReorder
+    } = useDashboardData();
 
     if (loading || !metrics) {
         return (
-            <div className="loading-state">
+            <div className="loading-state-purple">
                 <div className="spinner"></div>
-                <p>Connecting to AI Services...</p>
-                <style jsx>{`
-          .loading-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 60vh;
-            gap: 20px;
-            color: var(--text-muted);
-          }
-          .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-          }
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
+                <p>Initializing Logistics Network...</p>
+                <span className="text-muted-sm">Syncing with AI Forecasting Nodes</span>
             </div>
         );
     }
 
-    const formatValue = (val) => {
-        if (val === undefined || val === null) return '0';
-        return val.toLocaleString('en-US').replace(/,/g, '.');
+    const formatValue = (val, isCurrency = false) => {
+        if (val === undefined || val === null) return isCurrency ? '₹0' : '0';
+        const formatted = val.toLocaleString('en-IN');
+        return isCurrency ? `₹${formatted}` : formatted;
     };
 
     return (
         <div className="dashboard-container">
             <div className="metrics-grid">
                 <MetricCard
-                    title="Incoming Package"
-                    value={formatValue(metrics?.incoming?.value)}
+                    title="Inbound Stock"
+                    value={formatValue(metrics?.incoming?.value, true)}
                     trend={metrics?.incoming?.trend}
                     trendValue={metrics?.incoming?.trendValue}
                     icon={Package}
                     categories={metrics?.incoming?.categories || []}
                 />
                 <MetricCard
-                    title="Outgoing Package"
-                    value={formatValue(metrics?.outgoing?.value)}
+                    title="Outbound Stock"
+                    value={formatValue(metrics?.outgoing?.value, true)}
                     trend={metrics?.outgoing?.trend}
                     trendValue={metrics?.outgoing?.trendValue}
                     icon={Truck}
                     categories={metrics?.outgoing?.categories || []}
                 />
                 <MetricCard
-                    title="Package not Detected"
+                    title="Stockout Risk"
                     value={formatValue(metrics?.undetected?.value)}
                     trend={metrics?.undetected?.trend}
                     trendValue={metrics?.undetected?.trendValue}
@@ -79,8 +70,18 @@ const Dashboard = () => {
                     <div className="section-header">
                         <h3>Inventory Overview</h3>
                         <div className="header-controls">
+                            <select
+                                className="card-select depot-switcher"
+                                value={selectedDepot}
+                                onChange={(e) => setSelectedDepot(e.target.value)}
+                            >
+                                <option value="all">Global Network</option>
+                                {depots.map(depot => (
+                                    <option key={depot._id || depot.id} value={depot._id || depot.id}>{depot.name}</option>
+                                ))}
+                            </select>
                             <select className="card-select">
-                                <option>Weekly</option>
+                                <option>Weekly Scale</option>
                             </select>
                         </div>
                     </div>
@@ -100,9 +101,8 @@ const Dashboard = () => {
                                             color: 'var(--text-main)'
                                         }}
                                     />
-                                    <Bar dataKey="incoming" stackId="a" fill="#2563eb" />
-                                    <Bar dataKey="outgoing" stackId="a" fill="#3b82f6" opacity={0.7} />
-                                    <Bar dataKey="undetected" stackId="a" fill="#93c5fd" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="actual" fill="#cbd5e1" radius={[4, 4, 0, 0]} name="Actual Sales (₹)" />
+                                    <Bar dataKey="predicted" fill="#2563eb" radius={[4, 4, 0, 0]} name="AI Predicted Demand (₹)" />
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
@@ -121,122 +121,123 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                <div className="ai-section">
-                    <div className="section-header">
-                        <h3>
-                            <Sparkles size={18} className="ai-icon" />
-                            AI Features
-                        </h3>
-                        <button className="more-btn">•••</button>
+                <div className="dashboard-grid">
+                    <div className="dashboard-section forecast-section">
+                        <div className="section-header">
+                            <h3>Demand Intelligence</h3>
+                            <div className="ai-badge">ARIMA V2.1 ACTIVE</div>
+                        </div>
+                        <div className="forecast-list">
+                            {topSKUs.map((sku, index) => (
+                                <div key={index} className="forecast-item">
+                                    <div className="forecast-info">
+                                        <span className="sku-label">{sku.sku}</span>
+                                        <div className="product-name">{sku.name}</div>
+                                        <div className="demand-stat">
+                                            <TrendingUp size={14} className="trend-up" />
+                                            <span>Predicted: <b>{sku.predictedDemand} units</b> next 7d</span>
+                                        </div>
+                                    </div>
+                                    <div className="forecast-action">
+                                        <div className="stock-level">
+                                            <span>Stock: {sku.currentStock}</span>
+                                            <div className="stock-bar">
+                                                <div
+                                                    className="stock-fill"
+                                                    style={{ width: `${Math.min((sku.currentStock / (sku.predictedDemand || 1)) * 100, 100)}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            className="reorder-btn"
+                                            onClick={() => handleReorder(sku.name)}
+                                        >
+                                            Quick Reorder
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="ai-card recommendation">
-                        <div className="ai-card-title">
-                            <Bell size={14} />
-                            <span>Smart Reorder Recommendation</span>
+                    <div className="dashboard-section alerts-section">
+                        <div className="section-header">
+                            <h3>Network Alerts</h3>
+                            <span className="alert-count">{alerts.length} Active</span>
                         </div>
-                        <p className="ai-card-desc">AI indicates {alerts?.[0]?.label || 'predictive analysis'} is needed.</p>
-                        <div className="recommendation-target">
-                            <Package size={14} />
-                            <span>{alerts?.[0]?.sku || 'System Check'}</span>
+                        <div className="alerts-list">
+                            {alerts.map((alert) => (
+                                <div key={alert.id} className={`alert-card ${alert.type}`}>
+                                    <div className="alert-header">
+                                        <span className="alert-label">{alert.label}</span>
+                                        <span className="alert-date">{alert.date}</span>
+                                    </div>
+                                    <div className="alert-progress">
+                                        <div
+                                            className="progress-bar"
+                                            style={{ width: `${alert.percentage}%` }}
+                                        ></div>
+                                    </div>
+                                    <div className="alert-footer">
+                                        <span>Current: {alert.current}</span>
+                                        <span>Target: {alert.max}</span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                        <button
-                            className="reorder-btn"
-                            onClick={() => handleReorder('Macbook Air')}
-                        >
-                            Execute Reorder &gt;
-                        </button>
                     </div>
-
-                    {alerts && alerts.length > 0 ? alerts.map(alert => (
-                        <div key={alert.id} className={`ai-card alert ${alert.type}`}>
-                            <div className="ai-card-header">
-                                <AlertCircle size={14} />
-                                <span>{alert.label}</span>
-                                <span className="perc">{alert.percentage}%</span>
-                            </div>
-                            <div className="mini-progress">
-                                <div className={`mini-fill ${alert.type}`} style={{ width: `${alert.percentage}%` }}></div>
-                            </div>
-                            <div className="ai-card-footer">
-                                <span>{alert.current?.toLocaleString()} / {alert.max?.toLocaleString()}</span>
-                                <span>{alert.date}</span>
-                            </div>
-                        </div>
-                    )) : (
-                        <div className="ai-card info">
-                            <p>No active anomalies detected by AI.</p>
-                        </div>
-                    )}
                 </div>
             </div>
 
-            <div className="tables-row">
-                <div className="table-section">
-                    <div className="section-header">
-                        <h3>Movement & Transaction</h3>
-                        <div className="header-actions">
-                            <div className="mini-search">
-                                <Search size={14} />
-                                <input type="text" placeholder="Search Product" />
-                            </div>
-                            <select className="card-select">
-                                <option>Sort by</option>
-                            </select>
-                        </div>
+            <div className="dashboard-section full-width">
+                <div className="section-header">
+                    <h3>Logistics Ledger</h3>
+                    <div className="header-controls">
+                        <input type="text" placeholder="Filter by SKU or Depot..." className="search-input" />
                     </div>
-                    <div className="data-table-container">
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Time</th>
-                                    <th>Product</th>
-                                    <th>SKU</th>
-                                    <th>Handled By</th>
-                                    <th>Status</th>
+                </div>
+                <div className="table-container">
+                    <table className="transaction-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>SKU / Product</th>
+                                <th>Movement</th>
+                                <th>Origin Depot</th>
+                                <th>Destination Depot</th>
+                                <th>Qty</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {transactions.map((tx) => (
+                                <tr key={tx.id}>
+                                    <td className="text-muted">{new Date(tx.timestamp).toLocaleDateString()}</td>
+                                    <td>
+                                        <div className="sku-cell">
+                                            <span className="sku">{tx.sku}</span>
+                                            <span className="name">{tx.name}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span className={`transaction-type ${tx.type.toLowerCase()}`}>
+                                            {tx.type}
+                                        </span>
+                                    </td>
+                                    <td>{tx.fromDepot || 'Supplier / External'}</td>
+                                    <td>{tx.toDepot || 'Customer / Outbound'}</td>
+                                    <td className="font-medium">{tx.quantity}</td>
+                                    <td>
+                                        <span className={`status-badge ${tx.status.toLowerCase()}`}>
+                                            {tx.status}
+                                        </span>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {transactions && transactions.length > 0 ? transactions.map((t) => (
-                                    <tr key={t.id}>
-                                        <td>{t.date}</td>
-                                        <td>{t.time}</td>
-                                        <td>{t.type}</td>
-                                        <td>{t.category}</td>
-                                        <td>{t.supplier}</td>
-                                        <td>
-                                            <span className={`status-badge ${t.status?.toLowerCase()}`}>
-                                                {t.status}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                )) : (
-                                    <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>No recent transactions found.</td></tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <style jsx>{`
-        .no-data-placeholder {
-            height: 350px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg-main);
-            border-radius: var(--radius-md);
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-        .ai-card.info {
-            padding: 20px;
-            text-align: center;
-            color: var(--text-muted);
-            border: 1px dashed var(--border);
-        }
-      `}</style>
         </div>
     );
 };

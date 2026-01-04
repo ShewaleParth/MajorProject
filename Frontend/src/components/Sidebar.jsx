@@ -11,22 +11,26 @@ import {
   User,
   Settings,
   MessageSquare,
-  ChevronLeft
+  ChevronLeft,
+  Warehouse
 } from 'lucide-react';
 
-const Sidebar = () => {
+const Sidebar = ({ activeItem, setActiveItem }) => {
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', active: true },
-    { icon: Package, label: 'Inventory Overview' },
-    { icon: Search, label: 'Stock Search & Tracking' },
+    { icon: LayoutDashboard, label: 'Dashboard', live: true },
+    { icon: Package, label: 'Inventory Overview', live: true },
+    { icon: Sparkles, label: 'AI Features', live: true },
+  ];
+
+  const logisticsItems = [
+    { icon: Warehouse, label: 'Depots', live: true },
     { icon: RefreshCcw, label: 'Movement & Transactions' },
-    { icon: Sparkles, label: 'AI Features' },
+    { icon: Search, label: 'Stock Search & Tracking' },
   ];
 
   const otherItems = [
     { icon: FileText, label: 'Reports Export' },
-    { icon: History, label: 'History Logs' },
-    { icon: Bell, label: 'Email Notifications', badge: 24 },
+    { icon: Bell, label: 'Notifications', badge: 12 },
   ];
 
   const accountItems = [
@@ -39,10 +43,10 @@ const Sidebar = () => {
     <aside className="sidebar">
       <div className="sidebar-header">
         <div className="logo-container">
-          <div className="logo-icon">M</div>
+          <div className="logo-icon shadow-sm">D</div>
           <div className="logo-text">
-            <h4>WareHub</h4>
-            <span>prajasi@mail.com</span>
+            <h4>Depot Manager</h4>
+            <span>Logistics Control System</span>
           </div>
         </div>
         <button className="collapse-btn">
@@ -54,52 +58,75 @@ const Sidebar = () => {
         <div className="nav-section">
           <p className="section-title">MAIN MENU</p>
           {menuItems.map((item, i) => (
-            <button key={i} className={`nav-item ${item.active ? 'active' : ''}`}>
-              <item.icon size={20} />
+            <button
+              key={i}
+              className={`nav-item ${activeItem === item.label ? 'active' : ''}`}
+              onClick={() => setActiveItem(item.label)}
+            >
+              <item.icon size={20} className={activeItem === item.label ? 'pulse' : ''} />
               <span>{item.label}</span>
+              {item.live && <span className="live-pill">LIVE</span>}
+              {activeItem === item.label && <div className="active-indicator" />}
             </button>
           ))}
         </div>
 
         <div className="nav-section">
-          <p className="section-title">OTHER</p>
+          <p className="section-title">LOGISTICS NETWORK</p>
+          {logisticsItems.map((item, i) => (
+            <button
+              key={i}
+              className={`nav-item ${activeItem === item.label ? 'active' : ''}`}
+              onClick={() => setActiveItem(item.label)}
+            >
+              <item.icon size={20} />
+              <span>{item.label}</span>
+              {item.live && <span className="live-pill">LIVE</span>}
+              {activeItem === item.label && <div className="active-indicator" />}
+            </button>
+          ))}
+        </div>
+
+        <div className="nav-section">
+          <p className="section-title">SYSTEM</p>
           {otherItems.map((item, i) => (
-            <button key={i} className="nav-item">
+            <button
+              key={i}
+              className={`nav-item ${activeItem === item.label ? 'active' : ''}`}
+              onClick={() => setActiveItem(item.label)}
+            >
               <item.icon size={20} />
               <span>{item.label}</span>
               {item.badge && <span className="badge">{item.badge}</span>}
+              {activeItem === item.label && <div className="active-indicator" />}
             </button>
           ))}
         </div>
 
         <div className="nav-section">
-          <p className="section-title">ACCOUNT</p>
+          <p className="section-title">SYSTEM CONTROL</p>
           {accountItems.map((item, i) => (
-            <button key={i} className="nav-item">
+            <button
+              key={i}
+              className={`nav-item ${activeItem === item.label ? 'active' : ''}`}
+              onClick={() => setActiveItem(item.label)}
+            >
               <item.icon size={20} />
               <span>{item.label}</span>
+              {activeItem === item.label && <div className="active-indicator" />}
             </button>
           ))}
         </div>
       </nav>
 
       <div className="sidebar-footer">
-        <div className="upgrade-card">
-          <div className="progress-container">
-            <div className="progress-labels">
-              <span>Day 10 of 16</span>
-            </div>
-            <div className="progress-bar">
-              <div className="progress-fill" style={{ width: '60%' }}></div>
-            </div>
+        <div className="user-profile-sm glass-effect">
+          <div className="user-avatar shadow-md">P</div>
+          <div className="user-info">
+            <strong>Parth</strong>
+            <span>Admin Control Panel</span>
           </div>
-          <button className="upgrade-btn">
-            <Package size={16} />
-            <div className="btn-text">
-              <strong>Upgrade plan</strong>
-              <span>Your free trial will be over</span>
-            </div>
-          </button>
+          <Settings size={16} className="settings-icon spin-on-hover" />
         </div>
       </div>
     </aside>

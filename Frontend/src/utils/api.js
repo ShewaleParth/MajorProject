@@ -67,6 +67,16 @@ export const api = {
         return response.data;
     },
 
+    getDepotDetails: async (depotId) => {
+        const response = await nodeApi.get(`/depots/${depotId}/details`);
+        return response.data;
+    },
+
+    getNetworkMetrics: async () => {
+        const response = await nodeApi.get('/depots/network/metrics');
+        return response.data;
+    },
+
     getSalesTrend: async (params) => {
         const response = await nodeApi.get('/dashboard/sales-trend', { params });
         return response.data;

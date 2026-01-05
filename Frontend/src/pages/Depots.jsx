@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Warehouse, MapPin, BarChart3, Package, ShieldCheck, AlertTriangle, Search, Plus, ExternalLink, X } from 'lucide-react';
 import { api } from '../utils/api';
+import DepotDetails from './DepotDetails';
 
 const AddDepotModal = ({ isOpen, onClose, onAdd }) => {
     const [formData, setFormData] = useState({
@@ -47,7 +48,7 @@ const AddDepotModal = ({ isOpen, onClose, onAdd }) => {
     );
 };
 
-const DepotCard = ({ depot }) => {
+const DepotCard = ({ depot, onViewDetails }) => {
     const utilization = Math.round((depot.currentUtilization / depot.capacity) * 100) || 0;
     const getStatusColor = (u) => {
         if (u > 85) return '#ef4444'; // Critical
@@ -89,7 +90,7 @@ const DepotCard = ({ depot }) => {
                     <BarChart3 size={14} />
                     <span>Cap: {depot.capacity?.toLocaleString()} units</span>
                 </div>
-                <button className="view-inventory-btn" onClick={() => alert(`Detailed view for ${depot.name} Coming Soon!`)}>
+                <button className="view-inventory-btn" onClick={() => onViewDetails(depot.id || depot._id)}>
                     View Details <ExternalLink size={14} />
                 </button>
             </div>
@@ -101,6 +102,8 @@ const Depots = () => {
     const [depots, setDepots] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [currentView, setCurrentView] = useState('list'); // 'list' or 'details'
+    const [selectedDepotId, setSelectedDepotId] = useState(null);
     const [stats, setStats] = useState({
         totalCapacity: 0,
         totalStored: 0,
@@ -147,6 +150,22 @@ const Depots = () => {
             alert(`Error adding depot: ${error.response?.data?.message || error.message}`);
         }
     };
+
+    const handleViewDetails = (depotId) => {
+        setSelectedDepotId(depotId);
+        setCurrentView('details');
+    };
+
+    const handleBackToList = () => {
+        setCurrentView('list');
+        setSelectedDepotId(null);
+        fetchDepots(); // Refresh data when returning to list
+    };
+
+    // Show depot details view
+    if (currentView === 'details' && selectedDepotId) {
+        return <DepotDetails depotId={selectedDepotId} onBack={handleBackToList} />;
+    }
 
     return (
         <div className="depots-page-container">
@@ -198,7 +217,7 @@ const Depots = () => {
             ) : (
                 <div className="depots-grid">
                     {depots.map(depot => (
-                        <DepotCard key={depot._id || depot.id} depot={depot} />
+                        <DepotCard key={depot._id || depot.id} depot={depot} onViewDetails={handleViewDetails} />
                     ))}
 
                     <div className="depot-card-add" onClick={() => setIsModalOpen(true)}>

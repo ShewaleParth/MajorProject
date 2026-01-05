@@ -269,6 +269,35 @@ const depotSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
+// Pre-save hook to calculate derived fields from actual inventory data
+depotSchema.pre('save', function (next) {
+  // Calculate currentUtilization from products array (sum of all quantities)
+  if (this.products && this.products.length > 0) {
+    this.currentUtilization = this.products.reduce((total, product) => total + (product.quantity || 0), 0);
+  } else {
+    this.currentUtilization = 0;
+  }
+
+  // Calculate itemsStored (number of unique SKUs)
+  this.itemsStored = this.products ? this.products.length : 0;
+
+  // Calculate status based on utilization percentage
+  const utilizationPercent = this.capacity > 0 ? (this.currentUtilization / this.capacity) * 100 : 0;
+
+  if (utilizationPercent >= 95) {
+    this.status = 'critical';
+  } else if (utilizationPercent >= 85) {
+    this.status = 'warning';
+  } else {
+    this.status = 'normal';
+  }
+
+  // Update timestamp
+  this.updatedAt = new Date();
+
+  next();
+});
+
 // Transaction Schema
 const transactionSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -597,6 +626,28 @@ async function updateProductStockFromDepots(productId, userId) {
     return null;
   }
 }
+
+// Helper function to recalculate depot metrics from actual inventory
+async function recalculateDepotMetrics(depotId, userId) {
+  try {
+    const depot = await Depot.findOne({ _id: depotId, userId });
+    if (!depot) return null;
+
+    // The pre-save hook will automatically recalculate:
+    // - currentUtilization (sum of all product quantities)
+    // - itemsStored (count of products)
+    // - status (based on utilization percentage)
+
+    // Just save to trigger the hook
+    await depot.save();
+
+    return depot;
+  } catch (error) {
+    console.error('Error recalculating depot metrics:', error);
+    return null;
+  }
+}
+
 
 // ============================================================================
 // PRODUCT ROUTES
@@ -1984,9 +2035,75 @@ app.get('/api/transactions', authenticateToken, async (req, res) => {
 });
 
 
+// Network-level depot metrics endpoint
+app.get('/api/depots/network/metrics', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const depots = await Depot.find({ userId });
+
+    if (depots.length === 0) {
+      return res.json({
+        totalCapacity: 0,
+        totalOccupancy: 0,
+        averageUtilization: 0,
+        networkHealth: 'optimal',
+        depotsRequiringAttention: [],
+        totalDepots: 0
+      });
+    }
+
+    // Calculate network-level metrics
+    const totalCapacity = depots.reduce((sum, d) => sum + (d.capacity || 0), 0);
+    const totalOccupancy = depots.reduce((sum, d) => sum + (d.currentUtilization || 0), 0);
+    const averageUtilization = totalCapacity > 0 ? (totalOccupancy / totalCapacity) * 100 : 0;
+
+    // Determine overall network health
+    let networkHealth = 'optimal';
+    const criticalDepots = depots.filter(d => d.status === 'critical').length;
+    const warningDepots = depots.filter(d => d.status === 'warning').length;
+
+    if (criticalDepots > 0) {
+      networkHealth = 'critical';
+    } else if (warningDepots > 0) {
+      networkHealth = 'warning';
+    } else if (averageUtilization > 80) {
+      networkHealth = 'caution';
+    }
+
+    // Get depots requiring attention
+    const depotsRequiringAttention = depots
+      .filter(d => d.status === 'warning' || d.status === 'critical')
+      .map(d => ({
+        id: d._id,
+        name: d.name,
+        location: d.location,
+        status: d.status,
+        utilization: d.capacity > 0 ? ((d.currentUtilization / d.capacity) * 100).toFixed(1) : 0
+      }));
+
+    res.json({
+      totalCapacity,
+      totalOccupancy,
+      averageUtilization: Math.round(averageUtilization),
+      networkHealth,
+      depotsRequiringAttention,
+      totalDepots: depots.length,
+      statusBreakdown: {
+        normal: depots.filter(d => d.status === 'normal').length,
+        warning: warningDepots,
+        critical: criticalDepots
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching network metrics:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Add these routes to your server.js file (replace existing depot routes)
 
 // DEPOT ROUTES - COMPLETE CRUD
+
 
 // Get all depots
 app.get('/api/depots', authenticateToken, async (req, res) => {

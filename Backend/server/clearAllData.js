@@ -7,10 +7,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/inventroops';
 
 console.log('🔌 Connecting to MongoDB...');
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('✅ Connected to MongoDB');
     clearAllData();

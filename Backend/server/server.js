@@ -102,10 +102,7 @@ if (!MONGODB_URI) {
 console.log('ðŸ”„ Attempting to connect to MongoDB...');
 
 // Try connection with proper error handling
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('âœ… Connected to MongoDB Atlas successfully');
   })

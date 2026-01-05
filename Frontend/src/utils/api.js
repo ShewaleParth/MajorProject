@@ -7,6 +7,7 @@ const PYTHON_API_URL = '/ml-api';
 const nodeApi = axios.create({ baseURL: NODE_API_URL });
 const pythonApi = axios.create({ baseURL: PYTHON_API_URL });
 
+// Request interceptor to add JWT token
 nodeApi.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -15,8 +16,48 @@ nodeApi.interceptors.request.use((config) => {
     return config;
 });
 
+// Response interceptor to handle 401 errors
+nodeApi.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Token expired or invalid - clear auth and redirect to login
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
 export const api = {
-    // Node.js Backend
+    // Authentication
+    login: async (email, password) => {
+        const response = await nodeApi.post('/auth/login', { email, password });
+        return response.data;
+    },
+
+    signup: async (data) => {
+        const response = await nodeApi.post('/auth/signup', data);
+        return response.data;
+    },
+
+    verifyOTP: async (email, otp) => {
+        const response = await nodeApi.post('/auth/verify-otp', { email, otp });
+        return response.data;
+    },
+
+    forgotPassword: async (email) => {
+        const response = await nodeApi.post('/auth/forgot-password', { email });
+        return response.data;
+    },
+
+    resetPassword: async (data) => {
+        const response = await nodeApi.post('/auth/reset-password', data);
+        return response.data;
+    },
+
+    // Products
     getProducts: async (params) => {
         const response = await nodeApi.get('/products', { params });
         return response.data;
@@ -27,11 +68,22 @@ export const api = {
         return response.data;
     },
 
+    updateProduct: async (id, productData) => {
+        const response = await nodeApi.put(`/products/${id}`, productData);
+        return response.data;
+    },
+
+    deleteProduct: async (id) => {
+        const response = await nodeApi.delete(`/products/${id}`);
+        return response.data;
+    },
+
     bulkUpload: async (data) => {
         const response = await nodeApi.post('/products/bulk', data);
         return response.data;
     },
 
+    // Forecasts
     getForecasts: async () => {
         const response = await nodeApi.get('/forecasts');
         return response.data;
@@ -42,11 +94,13 @@ export const api = {
         return response.data;
     },
 
+    // Transactions
     getTransactions: async (params) => {
         const response = await nodeApi.get('/transactions', { params });
         return response.data;
     },
 
+    // Dashboard
     getDashboardStats: async () => {
         const response = await nodeApi.get('/dashboard/stats');
         return response.data;
@@ -57,6 +111,12 @@ export const api = {
         return response.data;
     },
 
+    getSalesTrend: async (params) => {
+        const response = await nodeApi.get('/dashboard/sales-trend', { params });
+        return response.data;
+    },
+
+    // Depots
     getDepots: async () => {
         const response = await nodeApi.get('/depots');
         return response.data;
@@ -74,21 +134,6 @@ export const api = {
 
     getNetworkMetrics: async () => {
         const response = await nodeApi.get('/depots/network/metrics');
-        return response.data;
-    },
-
-    getSalesTrend: async (params) => {
-        const response = await nodeApi.get('/dashboard/sales-trend', { params });
-        return response.data;
-    },
-
-    updateProduct: async (id, productData) => {
-        const response = await nodeApi.put(`/products/${id}`, productData);
-        return response.data;
-    },
-
-    deleteProduct: async (id) => {
-        const response = await nodeApi.delete(`/products/${id}`);
         return response.data;
     },
 

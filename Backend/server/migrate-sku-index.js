@@ -9,10 +9,7 @@ const MONGODB_URI = process.env.MONGODB_URI;
 async function migrate() {
   try {
     console.log('🔄 Connecting to MongoDB...');
-    await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB');
 
     const db = mongoose.connection.db;

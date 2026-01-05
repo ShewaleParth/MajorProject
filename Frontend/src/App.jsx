@@ -4,6 +4,7 @@ import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
 import InventoryOverview from './pages/InventoryOverview';
 import Depots from './pages/Depots';
+import ForecastingAnalysis from './pages/ForecastingAnalysis';
 
 function App() {
   const [theme, setTheme] = useState('light');
@@ -23,17 +24,8 @@ function App() {
         return <InventoryOverview />;
       case 'Depots':
         return <Depots />;
-      case 'AI Features':
-        return (
-          <div className="placeholder-view">
-            <h2>AI Prediction Engine</h2>
-            <p>Access advanced ARIMA and XGBoost forecasting tools.</p>
-            <div className="demo-btn-group">
-              <button className="reorder-btn">Run Bulk Forecast</button>
-              <button className="export-btn">Model Training Status</button>
-            </div>
-          </div>
-        );
+      case 'Forecasting Analysis':
+        return <ForecastingAnalysis />;
       default:
         return (
           <div className="placeholder-view">

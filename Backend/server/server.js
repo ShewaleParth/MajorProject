@@ -166,9 +166,16 @@ const forecastSchema = new mongoose.Schema({
     location: String,
     supplierName: String
   },
+  aiInsights: {
+    status: String,
+    eta_days: Number,
+    recommended_reorder: Number,
+    risk_level: String,
+    message: String
+  },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
-});
+}, { strict: false });
 
 const Forecast = mongoose.model('Forecast', forecastSchema);
 
@@ -415,6 +422,7 @@ app.get('/api/forecasts', authenticateToken, async (req, res) => {
         stockStatusPred: forecast.stockStatusPred,
         priorityPred: forecast.priorityPred,
         alert: forecast.alert,
+        aiInsights: forecast.aiInsights,
         forecastData: forecast.forecastData,
         inputParams: forecast.inputParams,
         updatedAt: forecast.updatedAt
@@ -451,6 +459,7 @@ app.get('/api/forecasts/:identifier', authenticateToken, async (req, res) => {
       stockStatusPred: forecast.stockStatusPred,
       priorityPred: forecast.priorityPred,
       alert: forecast.alert,
+      aiInsights: forecast.aiInsights,
       forecastData: forecast.forecastData,
       inputParams: forecast.inputParams,
       updatedAt: forecast.updatedAt
@@ -635,23 +644,61 @@ app.get('/api/products', authenticateToken, async (req, res) => {
     const total = await Product.countDocuments(query);
 
     res.json({
-      products: products.map(product => ({
-        id: product._id,
-        sku: product.sku,
-        name: product.name,
-        category: product.category,
-        stock: product.stock,
-        reorderPoint: product.reorderPoint,
-        supplier: product.supplier,
-        price: product.price,
-        status: product.status,
-        image: product.image,
-        depotDistribution: product.depotDistribution,
-        lastSoldDate: product.lastSoldDate.toISOString().split('T')[0]
-      })),
+      products: products.map(product => {
+        const dailySales = Number(product.dailySales || 5);
+        const weeklySales = Number(product.weeklySales || 35);
+        const leadTime = Number(product.leadTime || 7);
+        const stock = Number(product.stock || 0);
+
+        // Backend Intelligence Logic
+        const avgDailyDemand = (dailySales * 0.7) + ((weeklySales / 7) * 0.3);
+        const daysToStockOut = (avgDailyDemand > 0) ? Math.max(0, Math.round(stock / avgDailyDemand)) : 99;
+        const safetyStock = Math.round(avgDailyDemand * leadTime * 0.5);
+        const reorderQty = Math.round(avgDailyDemand * 30);
+
+        console.log(`AI Calc for ${product.sku}: stock=${stock}, daily=${dailySales}, out=${daysToStockOut}`);
+
+        // Ensure riskLevel is accurate for High/Medium/Safe buckets
+        let riskLevel = 'SAFE';
+        let aiExplanation = 'Inventory levels healthy.';
+
+        if (stock === 0 || daysToStockOut <= leadTime) {
+          riskLevel = 'HIGH';
+          aiExplanation = stock === 0 ? 'Item is out of stock. Immediate reorder required.' : 'Stock expected to exhaust before supplier lead time.';
+        } else if (daysToStockOut <= leadTime * 2) {
+          riskLevel = 'MEDIUM';
+          aiExplanation = 'Monitor closely. Demand trend increasing.';
+        }
+
+        return {
+          id: product._id,
+          sku: product.sku,
+          name: product.name,
+          category: product.category,
+          stock: product.stock,
+          reorderPoint: product.reorderPoint,
+          calculatedReorderPoint: Math.round((avgDailyDemand * leadTime) + safetyStock),
+          supplier: product.supplier,
+          price: product.price,
+          status: product.status,
+          image: product.image,
+          dailySales: product.dailySales,
+          weeklySales: product.weeklySales,
+          brand: product.brand,
+          leadTime: product.leadTime,
+          // AI Injected Fields
+          avgDailyDemand: avgDailyDemand.toFixed(1),
+          daysToStockOut,
+          reorderQty,
+          riskLevel,
+          aiExplanation,
+          depotDistribution: product.depotDistribution,
+          lastSoldDate: product.lastSoldDate ? product.lastSoldDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+        };
+      }),
       total,
       pages: Math.ceil(total / limit),
-      currentPage: page
+      currentPage: parseInt(page)
     });
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -830,6 +877,10 @@ app.post('/api/products/bulk-with-transactions', authenticateToken, async (req, 
           reorderPoint: parseInt(item.reorderPoint) || 10,
           supplier: item.supplier || 'Unknown',
           price: parseFloat(item.price) || 0,
+          dailySales: parseFloat(item.dailySales || item.dailysales) || 5,
+          weeklySales: parseFloat(item.weeklySales || item.weeklysales) || 35,
+          brand: item.brand || 'Generic',
+          leadTime: parseInt(item.leadTime || item.leadtime) || 7,
           depotId: depot._id,
           depotName: depot.name,
           depotQuantity: parseInt(item.stock) || 0,
@@ -921,13 +972,18 @@ app.post('/api/products/bulk', authenticateToken, async (req, res) => {
 
         if (product) {
           // Update existing
+          console.log(`Updating SKU ${item.sku}: new sales=${item.dailysales || item.dailySales}`);
           product.name = item.name || product.name;
           product.category = item.category || product.category;
           product.stock = item.stock !== undefined ? Number(item.stock) : product.stock;
-          product.reorderPoint = item.reorderPoint !== undefined ? Number(item.reorderPoint) : product.reorderPoint;
+          product.reorderPoint = (item.reorderPoint !== undefined ? Number(item.reorderPoint) : (item.reorderpoint !== undefined ? Number(item.reorderpoint) : product.reorderPoint));
           product.supplier = item.supplier || product.supplier;
           product.location = item.location || product.location;
           product.price = item.price !== undefined ? Number(item.price) : product.price;
+          product.dailySales = Number(item.dailySales || item.dailysales) || product.dailySales;
+          product.weeklySales = Number(item.weeklySales || item.weeklysales) || product.weeklySales;
+          product.brand = item.brand || product.brand;
+          product.leadTime = Number(item.leadTime || item.leadtime) || product.leadTime;
           product.updatedAt = new Date();
         } else {
           // Create new
@@ -937,10 +993,14 @@ app.post('/api/products/bulk', authenticateToken, async (req, res) => {
             name: item.name,
             category: item.category || 'Uncategorized',
             stock: Number(item.stock) || 0,
-            reorderPoint: Number(item.reorderPoint) || 10,
+            reorderPoint: Number(item.reorderPoint || item.reorderpoint) || 10,
             supplier: item.supplier || 'Unknown',
             location: item.location || 'Unknown',
             price: Number(item.price) || 0,
+            dailySales: Number(item.dailySales || item.dailysales) || 5,
+            weeklySales: Number(item.weeklySales || item.weeklysales) || 35,
+            brand: item.brand || 'Generic',
+            leadTime: Number(item.leadTime || item.leadtime) || 7,
             image: item.image || ''
           });
         }

@@ -11,6 +11,7 @@ from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tools.sm_exceptions import ConvergenceWarning
 import warnings
 import os
+from bson import ObjectId
 import traceback
 
 warnings.filterwarnings('ignore', category=ConvergenceWarning)
@@ -257,7 +258,7 @@ def fit_arima_model(historical_sales, order=(1, 1, 1)):
         return fitted_model, model_info
         
     except Exception as e:
-        print(f" ARIMA fitting failed: {e}")
+        # print(f" ARIMA fitting failed: {e}")
         return None, None
 
 
@@ -281,12 +282,12 @@ def forecast_with_arima(daily_sales, weekly_sales, steps=30):
     
     try:
         # Generate historical sales data from user inputs
-        print(" Generating historical sales pattern from user inputs...")
+        # print(" Generating historical sales pattern from user inputs...")
         historical_sales = generate_historical_sales_from_inputs(
             daily_sales, weekly_sales, num_days=60
         )
         
-        print(f"Historical sales stats: mean={historical_sales.mean():.2f}, std={historical_sales.std():.2f}")
+        # print(f"Historical sales stats: mean={historical_sales.mean():.2f}, std={historical_sales.std():.2f}")
         
         # Try different ARIMA orders to find the best fit
         orders_to_try = [
@@ -312,14 +313,14 @@ def forecast_with_arima(daily_sales, weekly_sales, steps=30):
                     best_order = order
         
         if best_model is None:
-            print(" All ARIMA models failed, using fallback method")
+            # print(" All ARIMA models failed, using fallback method")
             forecast = generate_fallback_forecast(daily_sales, weekly_sales, steps)
             return forecast, forecast_metadata
         
-        print(f" Best ARIMA model selected: {best_order} (AIC: {best_aic:.2f}, BIC: {best_model_info['bic']:.2f})")
+        # print(f" Best ARIMA model selected: {best_order} (AIC: {best_aic:.2f}, BIC: {best_model_info['bic']:.2f})")
         
         # Generate forecast
-        print(f" Forecasting next {steps} days using ARIMA{best_order}...")
+        # print(f" Forecasting next {steps} days using ARIMA{best_order}...")
         forecast = best_model.forecast(steps=steps)
         
         # Ensure non-negative values
@@ -328,11 +329,11 @@ def forecast_with_arima(daily_sales, weekly_sales, steps=30):
         # Add small random variation to make it more realistic
         forecast = forecast * np.random.uniform(0.95, 1.05, size=len(forecast))
         
-        print(f" ARIMA forecast completed successfully!")
-        print(f" Forecast stats: mean={forecast.mean():.2f}, min={forecast.min():.2f}, max={forecast.max():.2f}")
+        # print(f" ARIMA forecast completed successfully!")
+        # print(f" Forecast stats: mean={forecast.mean():.2f}, min={forecast.min():.2f}, max={forecast.max():.2f}")
         
         # Update metadata
-        forecast_metadata = {
+        forecast_metadata.update({
             "method": "ARIMA",
             "arima_used": True,
             "model_details": {
@@ -342,15 +343,18 @@ def forecast_with_arima(daily_sales, weekly_sales, steps=30):
                 "historical_points": len(historical_sales),
                 "forecast_mean": float(forecast.mean()),
                 "forecast_std": float(forecast.std())
-            }
-        }
+            },
+            "historical_sales": historical_sales.tolist()
+        })
         
         return forecast, forecast_metadata
         
     except Exception as e:
-        print(f" Error in ARIMA forecasting: {e}")
-        traceback.print_exc()
+        # Reduced printing for production-like feel
         forecast = generate_fallback_forecast(daily_sales, weekly_sales, steps)
+        # Ensure historical sales is also in fallback
+        historical_sales = generate_historical_sales_from_inputs(daily_sales, weekly_sales, num_days=60)
+        forecast_metadata["historical_sales"] = historical_sales.tolist()
         return forecast, forecast_metadata
 
 
@@ -425,7 +429,7 @@ def generate_alerts(row, forecast_sales_data=None, initial_stock=0):
         if current_stock <= 0:
             insights["status"] = "OUT OF STOCK"
             insights["risk_level"] = "Critical"
-            insights["recommended_reorder"] = round(total_forecasted * 1.2) # Reorder for full window + 20% buffer
+            insights["recommended_reorder"] = round(total_forecasted * 1.2)
             insights["message"] = f"Immediate restock required. Recommended: {insights['recommended_reorder']} units."
         elif insights["eta_days"] < lead_time:
             insights["status"] = "At Risk"
@@ -435,7 +439,24 @@ def generate_alerts(row, forecast_sales_data=None, initial_stock=0):
         elif insights["eta_days"] < 30:
             insights["status"] = "Warning"
             insights["risk_level"] = "Medium"
+            # Calculate reorder even for warnings so the modal isn't empty
+            insights["recommended_reorder"] = round(total_forecasted * 0.8)
             insights["message"] = f"Inventory sufficient for {insights['eta_days']} days. Plan reorder soon."
+
+        # Add additional fields for modal - Ensure they are always set
+        insights["avg_daily_demand"] = round(total_forecasted / len(forecast_sales_data), 2)
+        insights["reorder_point"] = round(insights["avg_daily_demand"] * lead_time * 1.5)
+        
+        # Calculate predicted stock out date
+        if insights["eta_days"] and insights["eta_days"] < 365:
+            insights["predicted_stock_out_date"] = (datetime.now() + timedelta(days=insights["eta_days"])).strftime('%Y-%m-%d')
+        else:
+            insights["predicted_stock_out_date"] = "N/A"
+    else:
+        # Fallback if no forecast data
+        insights["avg_daily_demand"] = 0
+        insights["reorder_point"] = 0
+        insights["predicted_stock_out_date"] = "N/A"
             
     return insights
 
@@ -542,6 +563,8 @@ def predict_custom():
         # Extract user inputs
         sku = data.get('sku')
         product_name = data.get('productName')
+        user_id_str = data.get('userId')
+        user_id = ObjectId(user_id_str) if user_id_str else None
         current_stock = float(data.get('currentStock', 0))
         daily_sales = float(data.get('dailySales', 0))
         weekly_sales = float(data.get('weeklySales', 0))
@@ -603,13 +626,13 @@ def predict_custom():
         )
         
         # Log which method was used
-        print(f" Forecast method used: {forecast_metadata['method']}")
+        # print(f" Forecast method used: {forecast_metadata['method']}")
         if forecast_metadata['arima_used']:
-            print(f" ARIMA model successfully trained and used")
-            print(f" Model: ARIMA{forecast_metadata['model_details']['order']}")
-            print(f" AIC: {forecast_metadata['model_details']['aic']:.2f}")
+            pass
+            # print(f" ARIMA model successfully trained and used")
         else:
-            print(f" Fallback method used instead of ARIMA")
+            pass
+            # print(f" Fallback method used instead of ARIMA")
         
         # Generate alerts
         row_data = {
@@ -626,6 +649,7 @@ def predict_custom():
         
         # Create forecast document
         forecast_doc = {
+            "userId": user_id,
             "itemId": sku,
             "productName": product_name,
             "sku": sku,
@@ -717,6 +741,7 @@ def scenario_planning():
         demand_multiplier = float(adjustments.get('demandMultiplier', 1.0))  # e.g., 1.2 = +20% demand
         lead_time_delta = int(adjustments.get('leadTimeDelta', 0))  # e.g., +3 days
         stock_delta = int(adjustments.get('stockDelta', 0))  # e.g., +100 units
+        sales_spike = float(adjustments.get('salesSpike', 1.0)) # e.g., 1.5 = +50% spike
         forecast_days = int(data.get('forecastDays', 30))
         
         # Validate
@@ -746,8 +771,8 @@ def scenario_planning():
         
         # === SCENARIO FORECAST ===
         print(f"🟢 Generating SCENARIO forecast with adjustments...")
-        scenario_daily_sales = baseline['dailySales'] * demand_multiplier
-        scenario_weekly_sales = baseline['weeklySales'] * demand_multiplier
+        scenario_daily_sales = baseline['dailySales'] * demand_multiplier * sales_spike
+        scenario_weekly_sales = baseline['weeklySales'] * demand_multiplier * sales_spike
         scenario_current_stock = baseline['currentStock'] + stock_delta
         scenario_lead_time = baseline['leadTime'] + lead_time_delta
         
@@ -859,6 +884,89 @@ def model_status():
         "arima_models_loaded": arima_models is not None,
         "arima_models_count": len(arima_models) if arima_models else 0
     })
+
+
+@app.route('/api/ml/forecast/<sku>', methods=['GET'])
+def get_forecast_by_sku(sku):
+    """Fetch stored forecast or generate a fresh one for the modal"""
+    try:
+        # 1. Check if we already have a fresh forecast in DB
+        # Only use it if it's less than 24 hours old
+        yesterday = datetime.now() - timedelta(hours=24)
+        forecast = forecasts_collection.find_one({
+            "sku": sku,
+            "updatedAt": {"$gte": yesterday},
+            "aiInsights.avg_daily_demand": {"$exists": True} # Force re-generate if missing new fields
+        })
+        
+        if forecast:
+            forecast['_id'] = str(forecast['_id'])
+            if 'userId' in forecast: forecast['userId'] = str(forecast['userId'])
+            return jsonify({
+                "success": True,
+                "forecast": forecast,
+                "source": "cache"
+            })
+
+        # 2. If no fresh forecast, get product details and generate one
+        product = products_collection.find_one({"sku": sku})
+        if not product:
+            return jsonify({"success": False, "error": "Product not found"}), 404
+        
+        # Extract params (matching schema from server.js)
+        current_stock = float(product.get('stock', 0))
+        daily_sales = float(product.get('dailySales', 5))
+        weekly_sales = float(product.get('weeklySales', 35))
+        lead_time = float(product.get('leadTime', 7))
+        reorder_level = float(product.get('reorderPoint', 10))
+        
+        # Generate forecast (using our standard internal logic)
+        future_sales, metadata = forecast_with_arima(daily_sales, weekly_sales, steps=30)
+        insights = generate_alerts({
+            'current_stock': current_stock,
+            'lead_time': lead_time
+        }, forecast_sales_data=future_sales, initial_stock=current_stock)
+        
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        forecast_data = generate_forecast_data(future_sales, current_date, initial_stock=current_stock)
+        
+        # Build the document
+        forecast_doc = {
+            "sku": sku,
+            "productName": product.get('name', sku),
+            "currentStock": int(current_stock),
+            "stockStatusPred": insights.get('status', 'Healthy'),
+            "priorityPred": insights.get('risk_level', 'Low'),
+            "alert": insights.get('message', ''),
+            "aiInsights": insights,
+            "forecastData": forecast_data,
+            "historicalData": metadata.get("historical_sales", []),
+            "inputParams": {
+                "dailySales": daily_sales,
+                "weeklySales": weekly_sales,
+                "reorderLevel": reorder_level,
+                "leadTime": lead_time,
+                "brand": product.get('brand', 'Generic'),
+                "category": product.get('category', 'Misc')
+            },
+            "forecastMethod": metadata["method"],
+            "updatedAt": datetime.now()
+        }
+        
+        # Store for future use
+        forecasts_collection.update_one({"sku": sku}, {"$set": forecast_doc}, upsert=True)
+        
+        # Return prepared doc
+        if '_id' in forecast_doc: del forecast_doc['_id']
+        return jsonify({
+            "success": True,
+            "forecast": forecast_doc,
+            "source": "generated"
+        })
+
+    except Exception as e:
+        print(f"Error in forecast fetch: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 if __name__ == '__main__':

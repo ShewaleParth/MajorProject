@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Filter, ChevronDown, MoreHorizontal, Grid, List, TrendingUp, Package, DollarSign, X, Upload } from 'lucide-react';
 import { api } from '../utils/api';
+import ForecastModal from '../components/ForecastModal';
 
 const AddItemModal = ({ isOpen, onClose, onAdd, depots }) => {
     const [formData, setFormData] = useState({
@@ -134,6 +135,8 @@ const InventoryOverview = () => {
     const [depots, setDepots] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [selectedDepot, setSelectedDepot] = useState('All');
+    const [isForecastModalOpen, setIsForecastModalOpen] = useState(false);
+    const [selectedProductForForecast, setSelectedProductForForecast] = useState(null);
     const fileInputRef = useRef(null);
 
     const fetchData = async () => {
@@ -239,11 +242,12 @@ const InventoryOverview = () => {
         const reader = new FileReader();
         reader.onload = async (event) => {
             const text = event.target.result;
-            const rows = text.split('\n').filter(r => r.trim());
+            const rows = text.split(/\r?\n/).filter(r => r.trim());
             const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
 
             const items = rows.slice(1).map(row => {
-                const values = row.split(',').map(v => v.trim());
+                // Regex to handle CSV with quoted fields containing commas
+                const values = row.match(/(\"([^\"]*)\"|[^,]+)/g).map(v => v.replace(/^\"|\"$/g, '').trim());
                 const item = {};
                 headers.forEach((h, i) => {
                     item[h] = values[i];
@@ -281,6 +285,11 @@ const InventoryOverview = () => {
 
     return (
         <div className="inventory-view-container">
+            <ForecastModal
+                isOpen={isForecastModalOpen}
+                onClose={() => setIsForecastModalOpen(false)}
+                product={selectedProductForForecast}
+            />
             <AddItemModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -461,9 +470,12 @@ const InventoryOverview = () => {
                                     <th style={{ width: '60px' }}>#</th>
                                     <th>ID Number</th>
                                     <th>Name</th>
-                                    <th>Size</th>
                                     <th>Price</th>
                                     <th>Stock</th>
+                                    <th>Stock-out In</th>
+                                    <th>Reorder Qty</th>
+                                    <th>Risk</th>
+                                    <th style={{ width: '40px' }}>Forecast</th>
                                     <th style={{ width: '40px' }}></th>
                                 </tr>
                             </thead>
@@ -479,14 +491,34 @@ const InventoryOverview = () => {
                                             </td>
                                             <td className="sku-text font-bold">{product.sku}</td>
                                             <td>{product.name}</td>
-                                            <td className="text-muted-sm">{product.size}</td>
                                             <td className="font-bold">₹{product.price}</td>
                                             <td className="font-bold">{product.stock} units</td>
+                                            <td className="font-bold">{product.daysToStockOut ?? '??'} days</td>
+                                            <td className="font-bold">{product.reorderQty ?? '??'} units</td>
+                                            <td>
+                                                <span className={`risk-badge ${product.riskLevel?.toLowerCase() || 'safe'}`} style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                                                    {product.riskLevel || 'SAFE'}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button
+                                                    className="view-forecast-small-btn"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedProductForForecast(product);
+                                                        setIsForecastModalOpen(true);
+                                                    }}
+                                                    title="View AI Forecast"
+                                                    style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '4px' }}
+                                                >
+                                                    <TrendingUp size={18} />
+                                                </button>
+                                            </td>
                                             <td><ChevronDown size={18} className={`expand-icon ${expandedRow === product.id ? 'rotated' : ''}`} /></td>
                                         </tr>
                                         {expandedRow === product.id && (
                                             <tr className="expanded-details-row">
-                                                <td colSpan="8">
+                                                <td colSpan="11">
                                                     <div className="expanded-card">
                                                         <div className="product-big-preview">
                                                             <img src={product.displayImage} alt="" />
@@ -501,10 +533,6 @@ const InventoryOverview = () => {
                                                                 <div className="val">₹{product.price}</div>
                                                             </div>
                                                             <div className="info-group">
-                                                                <label>Size</label>
-                                                                <div className="val">{product.size}</div>
-                                                            </div>
-                                                            <div className="info-group">
                                                                 <label>ID Number</label>
                                                                 <div className="val">{product.sku}</div>
                                                             </div>
@@ -516,9 +544,20 @@ const InventoryOverview = () => {
                                                                 <label>Stock</label>
                                                                 <div className="val">{product.stock} units</div>
                                                             </div>
+                                                            <div className="info-group" style={{ gridColumn: 'span 2' }}>
+                                                                <label>AI Forecast Insight</label>
+                                                                <div className="val" style={{ color: 'var(--primary)', fontWeight: '600' }}>
+                                                                    {product.aiExplanation}
+                                                                </div>
+                                                            </div>
                                                             <div className="info-group tags-group">
                                                                 <label>Actions</label>
                                                                 <div className="tags-list">
+                                                                    <span className="tag" onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setSelectedProductForForecast(product);
+                                                                        setIsForecastModalOpen(true);
+                                                                    }} style={{ background: 'var(--primary)', color: 'white', cursor: 'pointer' }}>View Forecast</span>
                                                                     <span className="tag" onClick={(e) => { e.stopPropagation(); handleEditProduct(product); }} style={{ cursor: 'pointer' }}>Edit Item</span>
                                                                     <span className="tag" onClick={(e) => { e.stopPropagation(); handleDeleteProduct(product.id); }} style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', cursor: 'pointer' }}>Delete</span>
                                                                 </div>

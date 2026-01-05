@@ -19,7 +19,7 @@ const Sidebar = ({ activeItem, setActiveItem }) => {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', live: true },
     { icon: Package, label: 'Inventory Overview', live: true },
-    { icon: Sparkles, label: 'AI Features', live: true },
+    { icon: Sparkles, label: 'Forecasting Analysis', live: true },
   ];
 
   const logisticsItems = [

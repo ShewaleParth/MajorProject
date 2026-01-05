@@ -96,5 +96,10 @@ export const api = {
     getAIStatus: async () => {
         const response = await pythonApi.get('/status');
         return response.data;
+    },
+
+    getForecastBySku: async (sku) => {
+        const response = await pythonApi.get(`/forecast/${sku}`);
+        return response.data;
     }
 };

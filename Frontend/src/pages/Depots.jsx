@@ -104,6 +104,8 @@ const Depots = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentView, setCurrentView] = useState('list'); // 'list' or 'details'
     const [selectedDepotId, setSelectedDepotId] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
     const [stats, setStats] = useState({
         totalCapacity: 0,
         totalStored: 0,
@@ -162,6 +164,25 @@ const Depots = () => {
         fetchDepots(); // Refresh data when returning to list
     };
 
+    // Filter depots based on search and status
+    const filteredDepots = depots.filter(depot => {
+        const matchesSearch = depot.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            depot.location.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        if (statusFilter === 'All') return matchesSearch;
+        
+        const utilization = Math.round((depot.currentUtilization / depot.capacity) * 100) || 0;
+        if (statusFilter === 'Healthy' && utilization <= 60) return matchesSearch;
+        if (statusFilter === 'Warning' && utilization > 60 && utilization <= 85) return matchesSearch;
+        if (statusFilter === 'Critical' && utilization > 85) return matchesSearch;
+        
+        return false;
+    });
+
+    // Calculate additional stats
+    const activeDepots = depots.filter(d => (d.currentUtilization / d.capacity) > 0.1).length;
+    const criticalDepots = depots.filter(d => ((d.currentUtilization / d.capacity) * 100) > 85).length;
+
     // Show depot details view
     if (currentView === 'details' && selectedDepotId) {
         return <DepotDetails depotId={selectedDepotId} onBack={handleBackToList} />;
@@ -185,29 +206,92 @@ const Depots = () => {
                 </button>
             </div>
 
-            <div className="depots-summary-grid">
-                <div className="summary-metric-card">
-                    <div className="icon purple"><ShieldCheck /></div>
-                    <div className="info">
-                        <span className="label">Network Health</span>
-                        <span className="value">{stats.avgUtilization < 80 ? 'Optimal' : 'Caution'}</span>
+            {/* Enhanced Statistics Cards */}
+            <div className="depot-stats-cards-grid">
+                <div className="depot-stat-card">
+                    <div className="depot-stat-icon total-depots">
+                        <Warehouse size={24} />
+                    </div>
+                    <div className="depot-stat-content">
+                        <h4>Total Depots</h4>
+                        <p className="stat-description">Active storage locations</p>
+                        <div className="stat-number">{depots.length}</div>
                     </div>
                 </div>
-                <div className="summary-metric-card">
-                    <div className="icon green"><Package /></div>
-                    <div className="info">
-                        <span className="label">Total Occupancy</span>
-                        <span className="value">{stats.totalStored.toLocaleString()} / {stats.totalCapacity.toLocaleString()}</span>
+
+                <div className="depot-stat-card">
+                    <div className="depot-stat-icon total-capacity">
+                        <Package size={24} />
+                    </div>
+                    <div className="depot-stat-content">
+                        <h4>Total Capacity</h4>
+                        <p className="stat-description">Network storage capacity</p>
+                        <div className="stat-number">{stats.totalCapacity.toLocaleString()}</div>
                     </div>
                 </div>
-                <div className="summary-metric-card">
-                    <div className="icon orange"><AlertTriangle /></div>
-                    <div className="info">
-                        <span className="label">Avg. Utilization</span>
-                        <span className="value">{stats.avgUtilization}%</span>
+
+                <div className="depot-stat-card">
+                    <div className="depot-stat-icon active-depots">
+                        <ShieldCheck size={24} />
+                    </div>
+                    <div className="depot-stat-content">
+                        <h4>Active Depots</h4>
+                        <p className="stat-description">Currently operational</p>
+                        <div className="stat-number">{activeDepots}</div>
+                    </div>
+                </div>
+
+                <div className="depot-stat-card">
+                    <div className="depot-stat-icon critical-alerts">
+                        <AlertTriangle size={24} />
+                    </div>
+                    <div className="depot-stat-content">
+                        <h4>Critical Alerts</h4>
+                        <p className="stat-description">Depots above 85% capacity</p>
+                        <div className="stat-number">{criticalDepots}</div>
                     </div>
                 </div>
             </div>
+
+            {/* Search and Filter Section */}
+            <div className="depot-filters-section">
+                <div className="search-input-wrapper-inline">
+                    <Search size={18} className="search-icon-purple" />
+                    <input
+                        type="text"
+                        placeholder="Search depots by name or location..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <div className="filter-buttons-group">
+                    <button 
+                        className={`filter-btn ${statusFilter === 'All' ? 'active' : ''}`}
+                        onClick={() => setStatusFilter('All')}
+                    >
+                        All Depots
+                    </button>
+                    <button 
+                        className={`filter-btn ${statusFilter === 'Healthy' ? 'active' : ''}`}
+                        onClick={() => setStatusFilter('Healthy')}
+                    >
+                        Healthy
+                    </button>
+                    <button 
+                        className={`filter-btn ${statusFilter === 'Warning' ? 'active' : ''}`}
+                        onClick={() => setStatusFilter('Warning')}
+                    >
+                        Warning
+                    </button>
+                    <button 
+                        className={`filter-btn ${statusFilter === 'Critical' ? 'active' : ''}`}
+                        onClick={() => setStatusFilter('Critical')}
+                    >
+                        Critical
+                    </button>
+                </div>
+            </div>
+
 
             {loading ? (
                 <div className="loading-state-purple">
@@ -216,15 +300,25 @@ const Depots = () => {
                 </div>
             ) : (
                 <div className="depots-grid">
-                    {depots.map(depot => (
+                    {filteredDepots.map(depot => (
                         <DepotCard key={depot._id || depot.id} depot={depot} onViewDetails={handleViewDetails} />
                     ))}
 
-                    <div className="depot-card-add" onClick={() => setIsModalOpen(true)}>
-                        <div className="add-icon"><Plus size={32} /></div>
-                        <h3>Add New Node</h3>
-                        <p>Expand your logistics network</p>
-                    </div>
+                    {filteredDepots.length === 0 && (
+                        <div className="empty-state-card" style={{ gridColumn: '1 / -1' }}>
+                            <Package size={48} className="text-muted" />
+                            <h3>No depots found</h3>
+                            <p>Try adjusting your search or filter criteria.</p>
+                        </div>
+                    )}
+
+                    {statusFilter === 'All' && searchQuery === '' && (
+                        <div className="depot-card-add" onClick={() => setIsModalOpen(true)}>
+                            <div className="add-icon"><Plus size={32} /></div>
+                            <h3>Add New Node</h3>
+                            <p>Expand your logistics network</p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

@@ -1898,6 +1898,131 @@ input {
   animation: fadeIn 0.4s ease;
 }
 
+/* Depot Statistics Cards Grid */
+.depot-stats-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.depot-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.depot-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.depot-stat-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.depot-stat-icon.total-depots {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.depot-stat-icon.total-capacity {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+.depot-stat-icon.active-depots {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  color: white;
+}
+
+.depot-stat-icon.critical-alerts {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  color: white;
+}
+
+.depot-stat-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.depot-stat-content h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.depot-stat-content .stat-description {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.depot-stat-content .stat-number {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-main);
+  font-family: var(--font-heading);
+  margin-top: 8px;
+}
+
+/* Depot Filters Section */
+.depot-filters-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.filter-buttons-group {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-main);
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  background: var(--bg-card);
+  border-color: var(--primary);
+}
+
+.filter-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
 .depots-header {
   display: flex;
   justify-content: space-between;
@@ -2252,6 +2377,247 @@ input {
   background: var(--bg-main);
   color: var(--text-main);
   border-color: var(--primary);
+}
+
+/* Depot KPI Cards Grid */
+.depot-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.depot-kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.depot-kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.depot-kpi-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.depot-kpi-icon.total-skus {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.depot-kpi-icon.stock-value {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+.depot-kpi-icon.turnover {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  color: white;
+}
+
+.depot-kpi-icon.inflow-outflow {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  color: white;
+}
+
+.depot-kpi-content {
+  flex: 1;
+}
+
+.depot-kpi-content h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-main);
+  font-family: var(--font-heading);
+  margin-bottom: 4px;
+}
+
+.kpi-trend {
+  font-size: 12px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.kpi-trend.positive {
+  color: #10b981;
+}
+
+.kpi-trend.negative {
+  color: #ef4444;
+}
+
+.kpi-trend.neutral {
+  color: var(--text-muted);
+}
+
+/* Depot Analytics Row */
+.depot-analytics-row {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+/* Health Score Card */
+.health-score-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.health-score-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0 0 20px 0;
+}
+
+.health-score-circle {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin-bottom: 16px;
+}
+
+.health-score-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.health-score-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Quick Stats Grid */
+.quick-stats-grid {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+}
+
+.quick-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: var(--bg-main);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.quick-stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.quick-stat-item .stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.quick-stat-item .stat-value {
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--text-main);
+  font-family: var(--font-heading);
+  line-height: 1;
+}
+
+.quick-stat-item .stat-value.warning {
+  color: #f59e0b;
+}
+
+.quick-stat-item .stat-value.danger {
+  color: #ef4444;
+}
+
+.quick-stat-item .stat-value.success {
+  color: #10b981;
+}
+
+/* Enhanced Inventory Table */
+.inventory-table.enhanced {
+  min-width: 1200px;
+}
+
+.inventory-table.enhanced th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.value-cell {
+  font-weight: 600;
+  color: #10b981;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-pill.optimal {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-pill.low {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-pill.overstock {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .depot-title-section {
@@ -2746,6 +3112,23 @@ input {
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
   }
+
+  /* Depot Stats Grid - 2 columns on tablet */
+  .depot-stats-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  /* Depot Details KPI - 2 columns on tablet */
+  .depot-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .quick-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
 }
 
 /* Mobile Styles (max-width: 768px) */
@@ -3067,6 +3450,41 @@ input {
   }
 
   /* Depot Page Mobile */
+  .depot-stats-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .depot-stat-card {
+    padding: 16px;
+  }
+
+  .depot-stat-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .depot-stat-content .stat-number {
+    font-size: 28px;
+  }
+
+  .depot-filters-section {
+    flex-direction: column;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .filter-buttons-group {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    flex: 1;
+    min-width: 100px;
+  }
+
   .depots-grid {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -3098,6 +3516,52 @@ input {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+
+  /* Depot Details Mobile */
+  .depot-kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .depot-kpi-card {
+    padding: 16px;
+  }
+
+  .depot-kpi-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .kpi-value {
+    font-size: 24px;
+  }
+
+  .depot-analytics-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .health-score-card {
+    padding: 20px;
+  }
+
+  .quick-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .quick-stat-item {
+    padding: 16px;
+  }
+
+  .quick-stat-item .stat-value {
+    font-size: 36px;
+  }
+
+  .inventory-table.enhanced {
+    min-width: 1000px;
   }
 
   /* Forecasting Analysis Mobile */

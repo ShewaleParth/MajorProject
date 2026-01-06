@@ -82,6 +82,112 @@ const DepotDetails = ({ depotId, onBack }) => {
                 </div>
             </div>
 
+            {/* KPI Statistics Cards */}
+            <div className="depot-kpi-grid">
+                <div className="depot-kpi-card">
+                    <div className="depot-kpi-icon total-skus">
+                        <Package size={24} />
+                    </div>
+                    <div className="depot-kpi-content">
+                        <h4>Total SKUs</h4>
+                        <div className="kpi-value">{depot.itemsStored || products.length}</div>
+                        <p className="kpi-trend positive">↑ 12% vs last month</p>
+                    </div>
+                </div>
+
+                <div className="depot-kpi-card">
+                    <div className="depot-kpi-icon stock-value">
+                        <TrendingUp size={24} />
+                    </div>
+                    <div className="depot-kpi-content">
+                        <h4>Stock Value</h4>
+                        <div className="kpi-value">
+                            ₹{products.reduce((acc, p) => acc + (p.quantity * (p.price || 100)), 0).toLocaleString()}
+                        </div>
+                        <p className="kpi-trend neutral">Total inventory value</p>
+                    </div>
+                </div>
+
+                <div className="depot-kpi-card">
+                    <div className="depot-kpi-icon turnover">
+                        <Activity size={24} />
+                    </div>
+                    <div className="depot-kpi-content">
+                        <h4>Turnover Rate</h4>
+                        <div className="kpi-value">
+                            {recentMovements.length > 0 ? (recentMovements.length / 30).toFixed(1) : '0'}/day
+                        </div>
+                        <p className="kpi-trend positive">↑ 8% efficiency</p>
+                    </div>
+                </div>
+
+                <div className="depot-kpi-card">
+                    <div className="depot-kpi-icon inflow-outflow">
+                        <AlertTriangle size={24} />
+                    </div>
+                    <div className="depot-kpi-content">
+                        <h4>Daily Movement</h4>
+                        <div className="kpi-value">
+                            {recentMovements.filter(m => m.type === 'stock-in').length} in / 
+                            {recentMovements.filter(m => m.type === 'stock-out').length} out
+                        </div>
+                        <p className="kpi-trend neutral">Last 24 hours</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Health Score & Quick Stats */}
+            <div className="depot-analytics-row">
+                <div className="health-score-card">
+                    <h3>Depot Health Score</h3>
+                    <div className="health-score-circle">
+                        <svg width="120" height="120" viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#e5e7eb" strokeWidth="8" />
+                            <circle 
+                                cx="60" 
+                                cy="60" 
+                                r="54" 
+                                fill="none" 
+                                stroke={utilizationPercent <= 60 ? '#10b981' : utilizationPercent <= 85 ? '#f59e0b' : '#ef4444'}
+                                strokeWidth="8"
+                                strokeDasharray={`${(utilizationPercent / 100) * 339.292} 339.292`}
+                                strokeLinecap="round"
+                                transform="rotate(-90 60 60)"
+                            />
+                        </svg>
+                        <div className="health-score-value">
+                            {Math.round(100 - (utilizationPercent > 80 ? (utilizationPercent - 80) * 2 : 0))}
+                        </div>
+                    </div>
+                    <p className="health-score-label">
+                        {utilizationPercent <= 60 ? 'Excellent' : utilizationPercent <= 85 ? 'Good' : 'Needs Attention'}
+                    </p>
+                </div>
+
+                <div className="quick-stats-grid">
+                    <div className="quick-stat-item">
+                        <span className="stat-label">Avg Days in Stock</span>
+                        <span className="stat-value success">45</span>
+                    </div>
+                    <div className="quick-stat-item">
+                        <span className="stat-label">Low Stock Items</span>
+                        <span className="stat-value warning">
+                            {products.filter(p => p.quantity < 50).length}
+                        </span>
+                    </div>
+                    <div className="quick-stat-item">
+                        <span className="stat-label">Overstock Items</span>
+                        <span className="stat-value">
+                            {products.filter(p => p.quantity > 500).length}
+                        </span>
+                    </div>
+                    <div className="quick-stat-item">
+                        <span className="stat-label">Dead Stock</span>
+                        <span className="stat-value danger">3</span>
+                    </div>
+                </div>
+            </div>
+
             {/* Capacity Overview */}
             <div className="capacity-overview-card">
                 <h2>Capacity Overview</h2>
@@ -141,30 +247,48 @@ const DepotDetails = ({ depotId, onBack }) => {
                     />
                 </div>
                 <div className="inventory-table-container">
-                    <table className="inventory-table">
+                    <table className="inventory-table enhanced">
                         <thead>
                             <tr>
                                 <th>SKU</th>
                                 <th>Product Name</th>
                                 <th>Category</th>
                                 <th>Quantity</th>
+                                <th>Value</th>
+                                <th>Days in Stock</th>
+                                <th>Status</th>
                                 <th>Last Updated</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredProducts.length > 0 ? (
-                                filteredProducts.map((item, idx) => (
-                                    <tr key={idx}>
-                                        <td><code>{item.sku}</code></td>
-                                        <td>{item.productName}</td>
-                                        <td>{item.category || 'N/A'}</td>
-                                        <td><strong>{item.quantity}</strong></td>
-                                        <td>{new Date(item.lastUpdated).toLocaleDateString()}</td>
-                                    </tr>
-                                ))
+                                filteredProducts.map((item, idx) => {
+                                    const itemValue = (item.quantity * (item.price || 100));
+                                    const daysInStock = item.lastUpdated 
+                                        ? Math.floor((new Date() - new Date(item.lastUpdated)) / (1000 * 60 * 60 * 24))
+                                        : 0;
+                                    const status = item.quantity < 50 ? 'low' : item.quantity > 500 ? 'overstock' : 'optimal';
+                                    
+                                    return (
+                                        <tr key={idx}>
+                                            <td><code>{item.sku}</code></td>
+                                            <td><strong>{item.productName}</strong></td>
+                                            <td>{item.category || 'N/A'}</td>
+                                            <td><strong>{item.quantity}</strong></td>
+                                            <td className="value-cell">₹{itemValue.toLocaleString()}</td>
+                                            <td>{daysInStock} days</td>
+                                            <td>
+                                                <span className={`status-pill ${status}`}>
+                                                    {status === 'low' ? 'Low Stock' : status === 'overstock' ? 'Overstock' : 'Optimal'}
+                                                </span>
+                                            </td>
+                                            <td>{new Date(item.lastUpdated).toLocaleDateString()}</td>
+                                        </tr>
+                                    );
+                                })
                             ) : (
                                 <tr>
-                                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>
+                                    <td colSpan="8" style={{ textAlign: 'center', padding: '2rem' }}>
                                         {searchTerm ? 'No products match your search' : 'No inventory in this depot'}
                                     </td>
                                 </tr>

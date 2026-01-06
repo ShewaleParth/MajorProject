@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Search, Bell, Grid, Moon, Sun, LogOut, User } from 'lucide-react';
+import { Search, Bell, Grid, Moon, Sun, LogOut, User, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const Header = ({ theme, toggleTheme, title }) => {
+const Header = ({ theme, toggleTheme, title, onMenuClick }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -12,9 +12,13 @@ const Header = ({ theme, toggleTheme, title }) => {
     logout();
     navigate('/login');
   };
+
   return (
     <header className="header">
       <div className="header-left">
+        <button className="mobile-menu-btn" onClick={onMenuClick}>
+          <Menu size={20} />
+        </button>
         <h2 className="page-title">{title || 'Inventory Control & Depot Management'}</h2>
       </div>
 

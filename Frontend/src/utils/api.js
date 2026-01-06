@@ -78,6 +78,28 @@ export const api = {
         return response.data;
     },
 
+    // Product Details
+    getProductDetails: async (id) => {
+        const response = await nodeApi.get(`/products/${id}/details`);
+        return response.data;
+    },
+
+    // Transaction Management
+    addStockIn: async (data) => {
+        const response = await nodeApi.post('/transactions/stock-in', data);
+        return response.data;
+    },
+
+    addStockOut: async (data) => {
+        const response = await nodeApi.post('/transactions/stock-out', data);
+        return response.data;
+    },
+
+    transferStock: async (data) => {
+        const response = await nodeApi.post('/transactions/transfer', data);
+        return response.data;
+    },
+
     bulkUpload: async (data) => {
         const response = await nodeApi.post('/products/bulk', data);
         return response.data;

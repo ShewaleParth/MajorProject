@@ -19,8 +19,8 @@ const DepotDetails = ({ depotId, onBack }) => {
         try {
             const response = await api.getDepotDetails(depotId);
             setDepot(response.depot);
-            setProducts(response.products || []);
-            setRecentMovements(response.recentMovements || []);
+            setProducts(response.depot.inventory || []);
+            setRecentMovements(response.depot.recentTransactions || []);
             setUtilizationHistory(response.utilizationHistory || []);
         } catch (error) {
             console.error('Error fetching depot details:', error);
@@ -155,9 +155,9 @@ const DepotDetails = ({ depotId, onBack }) => {
                             {filteredProducts.length > 0 ? (
                                 filteredProducts.map((item, idx) => (
                                     <tr key={idx}>
-                                        <td><code>{item.productSku}</code></td>
+                                        <td><code>{item.sku}</code></td>
                                         <td>{item.productName}</td>
-                                        <td>{item.product?.category || 'N/A'}</td>
+                                        <td>{item.category || 'N/A'}</td>
                                         <td><strong>{item.quantity}</strong></td>
                                         <td>{new Date(item.lastUpdated).toLocaleDateString()}</td>
                                     </tr>
@@ -186,8 +186,8 @@ const DepotDetails = ({ depotId, onBack }) => {
                                 </div>
                                 <div className="movement-details">
                                     <div className="movement-header">
-                                        <span className={`movement-type ${movement.transactionType}`}>
-                                            {movement.transactionType.toUpperCase()}
+                                        <span className={`movement-type ${movement.type}`}>
+                                            {movement.type.toUpperCase()}
                                         </span>
                                         <span className="movement-date">
                                             {new Date(movement.timestamp).toLocaleDateString()}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Filter, ChevronDown, MoreHorizontal, Grid, List, TrendingUp, Package, DollarSign, X, Upload, Eye } from 'lucide-react';
+import { Search, Plus, Filter, ChevronDown, MoreHorizontal, Grid, List, TrendingUp, Package, DollarSign, X, Upload, Eye, AlertCircle } from 'lucide-react';
 import { api } from '../utils/api';
 import ForecastModal from '../components/ForecastModal';
 
@@ -363,57 +363,59 @@ const InventoryOverview = () => {
                 onChange={handleFileUpload}
             />
 
-            <div className="inventory-sidebar">
-                <div className="search-section-box">
-                    <h3>Search for items</h3>
-                    <p className="text-muted-sm">Type id number or name of items</p>
-                    <div className="search-input-wrapper">
-                        <Search size={18} className="search-icon-purple" />
-                        <input
-                            type="text"
-                            placeholder="search for items"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                </div>
 
-                <div className="summary-card-modern">
-                    <div className="summary-header">
-                        <select className="summary-period-select">
-                            <option>Monthly</option>
-                            <option>Weekly</option>
-                        </select>
-                    </div>
-
-                    <div className="stat-row-modern">
-                        <div className="stat-item">
-                            <span className="stat-label">Purchased</span>
-                            <div className="stat-value">{products.length > 0 ? '2209' : '0'} <span className="unit">pairs</span></div>
+            <div className="inventory-main-content">
+                {/* Inventory Statistics Cards */}
+                <div className="inventory-stats-grid">
+                    <div className="stat-card">
+                        <div className="stat-card-icon total-items">
+                            <Package size={24} />
                         </div>
-                        <div className="stat-item">
-                            <span className="stat-label">Available</span>
-                            <div className="stat-value">{products.reduce((acc, p) => acc + p.stock, 0)} <span className="unit">items</span></div>
+                        <div className="stat-card-content">
+                            <h4>Total Items</h4>
+                            <p className="stat-description">Total items in stock</p>
+                            <div className="stat-number">{products.length}</div>
                         </div>
                     </div>
 
-                    <div className="sparkline-section">
-                        <div className="spark-stat">
-                            <span className="label">Store Health</span>
-                            <div className="val-box">
-                                <strong>{products.length > 0 ? 'Optimal' : 'Checking...'}</strong>
+                    <div className="stat-card">
+                        <div className="stat-card-icon low-stock">
+                            <TrendingUp size={24} />
+                        </div>
+                        <div className="stat-card-content">
+                            <h4>Low Stock Items</h4>
+                            <p className="stat-description">Number of items that are running low</p>
+                            <div className="stat-number">
+                                {products.filter(p => p.riskLevel === 'HIGH' || p.riskLevel === 'MEDIUM').length}
                             </div>
                         </div>
                     </div>
 
-                    <div className="upgrade-promo-card">
-                        <p>Need advanced analytics? Connect your Python ML models.</p>
-                        <button className="upgrade-btn-white">Manage Models</button>
+                    <div className="stat-card">
+                        <div className="stat-card-icon expired">
+                            <AlertCircle size={24} />
+                        </div>
+                        <div className="stat-card-content">
+                            <h4>Expired Items</h4>
+                            <p className="stat-description">Number of items past their expiration date</p>
+                            <div className="stat-number">0</div>
+                        </div>
+                    </div>
+
+                    <div className="stat-card">
+                        <div className="stat-card-icon out-of-stock">
+                            <Package size={24} />
+                        </div>
+                        <div className="stat-card-content">
+                            <h4>Out of Stock Items</h4>
+                            <p className="stat-description">Count of items currently out of stock</p>
+                            <div className="stat-number">
+                                {products.filter(p => p.stock === 0).length}
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="inventory-main-content">
                 <div className="inventory-header-filters">
                     <div className="filters-left">
                         <div className="filter-group-modern" style={{ display: 'flex', gap: '12px' }}>
@@ -442,6 +444,18 @@ const InventoryOverview = () => {
                             </div>
                         </div>
                     </div>
+                    
+                    {/* Search Bar in the Middle */}
+                    <div className="search-input-wrapper-inline">
+                        <Search size={18} className="search-icon-purple" />
+                        <input
+                            type="text"
+                            placeholder="search for items"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+
                     <div className="filters-right">
                         <button className="export-btn" onClick={() => fileInputRef.current.click()}>
                             Upload CSV <Upload size={18} style={{ marginLeft: '8px' }} />

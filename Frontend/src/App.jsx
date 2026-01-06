@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
 import InventoryOverview from './pages/InventoryOverview';
+import ProductDetailsView from './pages/ProductDetailsView';
 import Depots from './pages/Depots';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -67,6 +68,16 @@ function App() {
                     </main>
                   </div>
                 </div>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Product Details Route */}
+          <Route
+            path="/product/:productId"
+            element={
+              <ProtectedRoute>
+                <ProductDetailsView />
               </ProtectedRoute>
             }
           />

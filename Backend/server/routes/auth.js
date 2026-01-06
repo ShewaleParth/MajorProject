@@ -2,64 +2,14 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
+const { generateToken } = require('../utils/jwt');
+const { sendOTPEmail, sendPasswordResetEmail } = require('../services/emailService');
 const { validate, signupSchema, loginSchema } = require('../middleware/validation');
 const { authLimiter } = require('../middleware/security');
-
-// JWT Configuration
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-
-// Email transporter (if configured)
-let transporter = null;
-if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-  transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
-    }
-  });
-}
 
 // Helper function to generate OTP
 const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
-};
-
-// Helper function to send OTP email
-const sendOTPEmail = async (email, otp, name) => {
-  if (!transporter) {
-    console.warn('Email not configured - OTP:', otp);
-    return { success: false, message: 'Email service not configured' };
-  }
-
-  try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Sangrahak - Email Verification OTP',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Welcome to Sangrahak!</h2>
-          <p>Hi ${name},</p>
-          <p>Thank you for signing up. Please use the following OTP to verify your email:</p>
-          <div style="background-color: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0;">
-            <h1 style="color: #1f2937; letter-spacing: 5px; margin: 0;">${otp}</h1>
-          </div>
-          <p>This OTP will expire in 10 minutes.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-          <p style="color: #6b7280; font-size: 12px;">Sangrahak - AI-Powered Inventory Management</p>
-        </div>
-      `
-    });
-    return { success: true };
-  } catch (error) {
-    console.error('Error sending OTP email:', error);
-    return { success: false, message: error.message };
-  }
 };
 
 // ============================================================================
@@ -178,12 +128,8 @@ router.post('/verify-otp', authLimiter, async (req, res) => {
     user.otpExpiry = undefined;
     await user.save();
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
+    // Generate JWT token using centralized utility
+    const token = generateToken(user._id);
 
     res.json({
       message: 'Email verified successfully',
@@ -284,12 +230,8 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
       });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
+    // Generate JWT token using centralized utility
+    const token = generateToken(user._id);
 
     // Update last login
     user.updatedAt = new Date();

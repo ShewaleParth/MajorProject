@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Filter, ChevronDown, MoreHorizontal, Grid, List, TrendingUp, Package, DollarSign, X, Upload } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Plus, Filter, ChevronDown, MoreHorizontal, Grid, List, TrendingUp, Package, DollarSign, X, Upload, Eye } from 'lucide-react';
 import { api } from '../utils/api';
 import ForecastModal from '../components/ForecastModal';
 
@@ -127,6 +128,7 @@ const AddItemModal = ({ isOpen, onClose, onAdd, depots }) => {
 };
 
 const InventoryOverview = () => {
+    const navigate = useNavigate();
     const [expandedRow, setExpandedRow] = useState(null);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -555,9 +557,15 @@ const InventoryOverview = () => {
                                                                 <div className="tags-list">
                                                                     <span className="tag" onClick={(e) => {
                                                                         e.stopPropagation();
+                                                                        navigate(`/product/${product.id}`);
+                                                                    }} style={{ background: 'var(--primary)', color: 'white', cursor: 'pointer' }}>
+                                                                        <Eye size={14} /> View Details
+                                                                    </span>
+                                                                    <span className="tag" onClick={(e) => {
+                                                                        e.stopPropagation();
                                                                         setSelectedProductForForecast(product);
                                                                         setIsForecastModalOpen(true);
-                                                                    }} style={{ background: 'var(--primary)', color: 'white', cursor: 'pointer' }}>View Forecast</span>
+                                                                    }} style={{ background: '#3b82f6', color: 'white', cursor: 'pointer' }}>View Forecast</span>
                                                                     <span className="tag" onClick={(e) => { e.stopPropagation(); handleEditProduct(product); }} style={{ cursor: 'pointer' }}>Edit Item</span>
                                                                     <span className="tag" onClick={(e) => { e.stopPropagation(); handleDeleteProduct(product.id); }} style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', cursor: 'pointer' }}>Delete</span>
                                                                 </div>

@@ -13,6 +13,7 @@ import Signup from './pages/Signup';
 import VerifyOTP from './pages/VerifyOTP';
 import ForgotPassword from './pages/ForgotPassword';
 import ForecastingAnalysis from './pages/ForecastingAnalysis';
+import Reports from './pages/Reports';
 
 function App() {
   const [theme, setTheme] = useState('light');
@@ -55,6 +56,8 @@ function App() {
         return <Depots />;
       case 'Forecasting Analysis':
         return <ForecastingAnalysis />;
+      case 'Reports Export':
+        return <Reports />;
       default:
         return (
           <div className="placeholder-view">

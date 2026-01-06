@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -17,12 +17,33 @@ import ForecastingAnalysis from './pages/ForecastingAnalysis';
 function App() {
   const [theme, setTheme] = useState('light');
   const [activeItem, setActiveItem] = useState('Dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
   };
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const closeSidebar = () => {
+    setIsSidebarOpen(false);
+  };
+
+  // Close sidebar when window is resized to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const renderContent = () => {
     switch (activeItem) {
@@ -60,9 +81,26 @@ function App() {
             element={
               <ProtectedRoute>
                 <div className="app-container">
-                  <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} />
+                  {/* Sidebar Overlay for Mobile */}
+                  <div 
+                    className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`}
+                    onClick={closeSidebar}
+                  />
+                  
+                  <Sidebar 
+                    activeItem={activeItem} 
+                    setActiveItem={setActiveItem}
+                    isMobileOpen={isSidebarOpen}
+                    onClose={closeSidebar}
+                  />
+                  
                   <div className="main-layout">
-                    <Header theme={theme} toggleTheme={toggleTheme} title={activeItem} />
+                    <Header 
+                      theme={theme} 
+                      toggleTheme={toggleTheme} 
+                      title={activeItem}
+                      onMenuClick={toggleSidebar}
+                    />
                     <main className="content">
                       {renderContent()}
                     </main>

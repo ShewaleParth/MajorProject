@@ -376,4 +376,86 @@ router.post('/transfer', async (req, res, next) => {
   }
 });
 
+// POST - Generate live activity (for testing/demo purposes)
+router.post('/generate-activity', async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    const { days = 7, transactionsPerDay = 7 } = req.body;
+
+    const products = await Product.find({ userId });
+    const depots = await Depot.find({ userId });
+
+    if (products.length === 0 || depots.length === 0) {
+      return res.status(400).json({ 
+        message: 'No products or depots found. Please add products and depots first.' 
+      });
+    }
+
+    const transactions = [];
+    const now = new Date();
+
+    // Generate activity for the specified number of days
+    for (let i = 0; i < days; i++) {
+      const date = new Date();
+      date.setDate(now.getDate() - i);
+
+      // Generate transactions for this day
+      for (let j = 0; j < transactionsPerDay; j++) {
+        const product = products[Math.floor(Math.random() * products.length)];
+        const type = ['stock-in', 'stock-out', 'transfer'][Math.floor(Math.random() * 3)];
+        const quantity = Math.floor(Math.random() * 10) + 1;
+
+        // Adjust time of day
+        const txDate = new Date(date);
+        txDate.setHours(Math.floor(Math.random() * 24), Math.floor(Math.random() * 60));
+
+        const tx = {
+          userId,
+          productId: product._id,
+          productSku: product.sku,
+          productName: product.name,
+          transactionType: type,
+          quantity: quantity,
+          timestamp: txDate,
+          previousStock: product.stock,
+          newStock: product.stock,
+          performedBy: 'System',
+          reason: 'Generated activity'
+        };
+
+        if (type === 'transfer' && depots.length >= 2) {
+          tx.fromDepot = depots[0].name;
+          tx.fromDepotId = depots[0]._id;
+          tx.toDepot = depots[1].name;
+          tx.toDepotId = depots[1]._id;
+        } else if (type === 'stock-in') {
+          const depot = depots[Math.floor(Math.random() * depots.length)];
+          tx.toDepot = depot.name;
+          tx.toDepotId = depot._id;
+          tx.newStock = product.stock + quantity;
+        } else {
+          const depot = depots[Math.floor(Math.random() * depots.length)];
+          tx.fromDepot = depot.name;
+          tx.fromDepotId = depot._id;
+          tx.newStock = Math.max(0, product.stock - quantity);
+        }
+
+        transactions.push(tx);
+      }
+    }
+
+    await Transaction.insertMany(transactions);
+
+    res.json({
+      message: `Successfully generated ${transactions.length} live transactions`,
+      count: transactions.length,
+      days: days,
+      transactionsPerDay: transactionsPerDay
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

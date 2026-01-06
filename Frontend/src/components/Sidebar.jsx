@@ -12,10 +12,11 @@ import {
   Settings,
   MessageSquare,
   ChevronLeft,
-  Warehouse
+  Warehouse,
+  X
 } from 'lucide-react';
 
-const Sidebar = ({ activeItem, setActiveItem }) => {
+const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, onClose }) => {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', live: true },
     { icon: Package, label: 'Inventory Overview', live: true },
@@ -39,8 +40,16 @@ const Sidebar = ({ activeItem, setActiveItem }) => {
     { icon: MessageSquare, label: 'Feedback' },
   ];
 
+  const handleNavClick = (label) => {
+    setActiveItem(label);
+    // Close sidebar on mobile when item is clicked
+    if (onClose && window.innerWidth <= 768) {
+      onClose();
+    }
+  };
+
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
       <div className="sidebar-header">
         <div className="logo-container">
           <div className="logo-icon shadow-sm">D</div>
@@ -49,6 +58,9 @@ const Sidebar = ({ activeItem, setActiveItem }) => {
             <span>Logistics Control System</span>
           </div>
         </div>
+        <button className="mobile-close-btn" onClick={onClose}>
+          <X size={16} />
+        </button>
         <button className="collapse-btn">
           <ChevronLeft size={16} />
         </button>
@@ -61,7 +73,7 @@ const Sidebar = ({ activeItem, setActiveItem }) => {
             <button
               key={i}
               className={`nav-item ${activeItem === item.label ? 'active' : ''}`}
-              onClick={() => setActiveItem(item.label)}
+              onClick={() => handleNavClick(item.label)}
             >
               <item.icon size={20} className={activeItem === item.label ? 'pulse' : ''} />
               <span>{item.label}</span>
@@ -77,7 +89,7 @@ const Sidebar = ({ activeItem, setActiveItem }) => {
             <button
               key={i}
               className={`nav-item ${activeItem === item.label ? 'active' : ''}`}
-              onClick={() => setActiveItem(item.label)}
+              onClick={() => handleNavClick(item.label)}
             >
               <item.icon size={20} />
               <span>{item.label}</span>
@@ -93,7 +105,7 @@ const Sidebar = ({ activeItem, setActiveItem }) => {
             <button
               key={i}
               className={`nav-item ${activeItem === item.label ? 'active' : ''}`}
-              onClick={() => setActiveItem(item.label)}
+              onClick={() => handleNavClick(item.label)}
             >
               <item.icon size={20} />
               <span>{item.label}</span>
@@ -109,7 +121,7 @@ const Sidebar = ({ activeItem, setActiveItem }) => {
             <button
               key={i}
               className={`nav-item ${activeItem === item.label ? 'active' : ''}`}
-              onClick={() => setActiveItem(item.label)}
+              onClick={() => handleNavClick(item.label)}
             >
               <item.icon size={20} />
               <span>{item.label}</span>

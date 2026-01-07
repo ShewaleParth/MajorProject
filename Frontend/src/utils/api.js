@@ -178,5 +178,38 @@ export const api = {
     getForecastBySku: async (sku) => {
         const response = await pythonApi.get(`/forecast/${sku}`);
         return response.data;
+    },
+
+    // Reports API
+    getReportStats: async () => {
+        const response = await nodeApi.get('/reports/stats');
+        return response.data;
+    },
+
+    getReportsList: async (params) => {
+        const response = await nodeApi.get('/reports/list', { params });
+        return response.data;
+    },
+
+    generateReport: async (reportData) => {
+        const response = await nodeApi.post('/reports/generate', reportData);
+        return response.data;
+    },
+
+    getReportStatus: async (reportId) => {
+        const response = await nodeApi.get(`/reports/${reportId}/status`);
+        return response.data;
+    },
+
+    downloadReport: async (reportId) => {
+        const response = await nodeApi.get(`/reports/${reportId}/download`, {
+            responseType: 'blob'
+        });
+        return response.data;
+    },
+
+    deleteReport: async (reportId) => {
+        const response = await nodeApi.delete(`/reports/${reportId}`);
+        return response.data;
     }
 };

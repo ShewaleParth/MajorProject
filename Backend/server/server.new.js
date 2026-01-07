@@ -23,6 +23,12 @@ const depotRoutes = require('./routes/depots');
 const forecastRoutes = require('./routes/forecasts');
 const transactionRoutes = require('./routes/transactions');
 const dashboardRoutes = require('./routes/dashboard');
+const reportsRoutes = require('./routes/reports');
+
+// Initialize Redis (Upstash REST API)
+const { redis } = require('./config/redis');
+// TODO: Bull queue requires TCP Redis, not REST API
+// const reportQueue = require('./queues/reportQueue');
 
 // Validate environment variables
 config.validateEnv();
@@ -67,6 +73,7 @@ app.get('/api/health', async (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     database: 'disconnected',
+    redis: 'disconnected',
     memory: process.memoryUsage()
   };
   
@@ -76,6 +83,13 @@ app.get('/api/health', async (req, res) => {
   } catch (err) {
     health.status = 'degraded';
     health.database = 'disconnected';
+  }
+  
+  try {
+    await redis.ping();
+    health.redis = 'connected';
+  } catch (err) {
+    health.redis = 'disconnected';
   }
   
   const statusCode = health.status === 'ok' ? 200 : 503;
@@ -91,6 +105,7 @@ app.use('/api/depots', authenticateToken, depotRoutes);
 app.use('/api/forecasts', authenticateToken, forecastRoutes);
 app.use('/api/transactions', authenticateToken, transactionRoutes);
 app.use('/api/dashboard', authenticateToken, dashboardRoutes);
+app.use('/api/reports', authenticateToken, reportsRoutes);
 
 // WebSocket connection handling
 io.on('connection', (socket) => {

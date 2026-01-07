@@ -11,17 +11,26 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@upstash/redis": "^1.36.0",
+    "archiver": "^7.0.1",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.2",
+    "bull": "^4.16.5",
     "cors": "^2.8.5",
+    "csv-writer": "^1.6.0",
     "dotenv": "^17.2.3",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
+    "groq-sdk": "^0.37.0",
     "helmet": "^8.1.0",
+    "ioredis": "^5.9.0",
     "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.20.4",
     "nodemailer": "^7.0.12",
+    "pdfkit": "^0.17.2",
+    "redis": "^5.10.0",
     "socket.io": "^4.8.1"
   }
 }

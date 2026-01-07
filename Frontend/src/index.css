@@ -2860,6 +2860,78 @@ input {
   }
 }
 
+.report-actions button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+/* AI Summary Preview */
+.ai-summary-preview {
+  background: linear-gradient(135deg, #667eea15, #764ba215);
+  border-left: 3px solid #667eea;
+  padding: 12px;
+  margin: 12px 0;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ai-summary-preview strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #667eea;
+}
+
+.ai-summary-preview p {
+  margin: 0;
+  color: #555;
+}
+
+/* Status Icons */
+.status-icon-success {
+  color: #10b981;
+}
+
+.status-icon-loading {
+  color: #f59e0b;
+}
+
+.status-icon-error {
+  color: #ef4444;
+}
+
+/* Spinning Animation */
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Report Status Badges */
+.report-status.status-completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.report-status.status-processing,
+.report-status.status-queued {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.report-status.status-failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .report-stat-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);

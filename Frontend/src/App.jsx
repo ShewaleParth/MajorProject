@@ -14,6 +14,8 @@ import VerifyOTP from './pages/VerifyOTP';
 import ForgotPassword from './pages/ForgotPassword';
 import ForecastingAnalysis from './pages/ForecastingAnalysis';
 import Reports from './pages/Reports';
+import MovementTransactions from './pages/MovementTransactions';
+
 
 function App() {
   const [theme, setTheme] = useState('light');
@@ -58,6 +60,8 @@ function App() {
         return <ForecastingAnalysis />;
       case 'Reports Export':
         return <Reports />;
+      case 'Movement & Transactions':
+        return <MovementTransactions />;
       default:
         return (
           <div className="placeholder-view">

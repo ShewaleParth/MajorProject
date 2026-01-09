@@ -55,12 +55,8 @@ router.post('/stock-in', async (req, res, next) => {
     }
 
     const previousStock = product.stock;
-    const newStock = previousStock + parseInt(quantity);
 
-    // Update product stock
-    product.stock = newStock;
-
-    // Update or add depot distribution
+    // Update or add depot distribution (stock will be auto-calculated by pre-save hook)
     const depotDistIndex = product.depotDistribution.findIndex(
       d => d.depotId.toString() === depotId
     );
@@ -78,6 +74,9 @@ router.post('/stock-in', async (req, res, next) => {
     }
 
     await product.save();
+
+    // Get the new stock after save (calculated by pre-save hook)
+    const newStock = product.stock;
 
     // Update depot
     const depotProductIndex = depot.products.findIndex(
@@ -165,14 +164,8 @@ router.post('/stock-out', async (req, res, next) => {
     }
 
     const previousStock = product.stock;
-    const newStock = previousStock - parseInt(quantity);
 
-    if (newStock < 0) {
-      return res.status(400).json({ message: 'Insufficient total stock' });
-    }
-
-    // Update product stock
-    product.stock = newStock;
+    // Update depot distribution (stock will be auto-calculated by pre-save hook)
     product.depotDistribution[depotDistIndex].quantity -= parseInt(quantity);
     product.depotDistribution[depotDistIndex].lastUpdated = new Date();
 
@@ -182,6 +175,14 @@ router.post('/stock-out', async (req, res, next) => {
     }
 
     await product.save();
+
+    // Get the new stock after save (calculated by pre-save hook)
+    const newStock = product.stock;
+
+    // Validate we have enough stock
+    if (newStock < 0) {
+      return res.status(400).json({ message: 'Insufficient total stock' });
+    }
 
     // Update depot
     const depotProductIndex = depot.products.findIndex(
@@ -273,7 +274,7 @@ router.post('/transfer', async (req, res, next) => {
 
     const previousStock = product.stock;
 
-    // Update source depot distribution
+    // Update source depot distribution (total stock remains same for transfers)
     product.depotDistribution[fromDepotDistIndex].quantity -= parseInt(quantity);
     product.depotDistribution[fromDepotDistIndex].lastUpdated = new Date();
 

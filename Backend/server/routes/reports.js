@@ -105,6 +105,14 @@ router.post('/generate', authenticateToken, async (req, res) => {
     
     // If depot-specific report, validate depot
     if (config.needsDepot && targetId) {
+      // Validate that targetId is a valid MongoDB ObjectId
+      const mongoose = require('mongoose');
+      if (!mongoose.Types.ObjectId.isValid(targetId)) {
+        return res.status(400).json({ 
+          error: 'Invalid depot ID format. Please select a valid depot from the dropdown.' 
+        });
+      }
+
       const depot = await Depot.findOne({ _id: targetId, userId: req.userId });
       if (!depot) {
         return res.status(404).json({ error: 'Depot not found' });

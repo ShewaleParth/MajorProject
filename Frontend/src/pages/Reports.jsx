@@ -45,11 +45,16 @@ const Reports = () => {
     const fetchDepots = async () => {
         try {
             const depotsData = await api.getDepots();
+            console.log('🔍 Raw depots response:', depotsData);
+            
             if (Array.isArray(depotsData)) {
+                console.log('🔍 Setting depots from array:', depotsData);
                 setDepots(depotsData);
             } else if (depotsData && Array.isArray(depotsData.depots)) {
+                console.log('🔍 Setting depots from .depots property:', depotsData.depots);
                 setDepots(depotsData.depots);
             } else {
+                console.warn('🔍 No valid depots data found');
                 setDepots([]);
             }
         } catch (error) {
@@ -63,6 +68,19 @@ const Reports = () => {
             alert('Please select a depot');
             return;
         }
+
+        // Validate that selectedDepot is an ObjectId (24 hex characters)
+        const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+        if (!objectIdRegex.test(selectedDepot)) {
+            console.error('🔍 Invalid depot ID format:', selectedDepot);
+            console.error('🔍 This looks like display text, not an ObjectId');
+            alert('⚠️ Invalid depot selection. Please close this modal and try again. If the issue persists, refresh the page.');
+            setSelectedDepot(''); // Reset the selection
+            return;
+        }
+
+        console.log('🔍 Debug - Selected Depot ID:', selectedDepot);
+        console.log('🔍 Debug - Depots array:', depots);
 
         setGenerating(true);
         try {
@@ -80,6 +98,7 @@ const Reports = () => {
             setTimeout(fetchData, 2000);
         } catch (error) {
             console.error('Error generating report:', error);
+            console.error('🔍 Debug - Failed targetId:', selectedDepot);
             alert('❌ Failed to generate report: ' + (error.response?.data?.error || error.message));
         } finally {
             setGenerating(false);
@@ -498,15 +517,28 @@ const Reports = () => {
                             <label>Select Depot</label>
                             <select 
                                 value={selectedDepot} 
-                                onChange={(e) => setSelectedDepot(e.target.value)}
+                                onChange={(e) => {
+                                    console.log('🔍 Depot selected:', e.target.value);
+                                    setSelectedDepot(e.target.value);
+                                }}
                                 className="filter-select"
+                                autoComplete="off"
                             >
                                 <option value="">Choose a depot...</option>
-                                {depots && depots.map(depot => (
-                                    <option key={depot._id} value={depot._id}>
-                                        {depot.name} - {depot.location}
-                                    </option>
-                                ))}
+                                {depots && depots.map((depot, index) => {
+                                    console.log(`🔍 Depot ${index}:`, {
+                                        _id: depot._id,
+                                        id: depot.id,
+                                        name: depot.name,
+                                        location: depot.location,
+                                        fullObject: depot
+                                    });
+                                    return (
+                                        <option key={depot._id || depot.id || index} value={depot._id || depot.id}>
+                                            {depot.name} - {depot.location}
+                                        </option>
+                                    );
+                                })}
                             </select>
                         </div>
 

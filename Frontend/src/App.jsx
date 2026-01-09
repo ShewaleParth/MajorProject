@@ -15,6 +15,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ForecastingAnalysis from './pages/ForecastingAnalysis';
 import Reports from './pages/Reports';
 import MovementTransactions from './pages/MovementTransactions';
+import StockSearchTracking from './pages/StockSearchTracking';
 
 
 function App() {
@@ -62,6 +63,8 @@ function App() {
         return <Reports />;
       case 'Movement & Transactions':
         return <MovementTransactions />;
+      case 'Stock Search & Tracking':
+        return <StockSearchTracking />;
       default:
         return (
           <div className="placeholder-view">

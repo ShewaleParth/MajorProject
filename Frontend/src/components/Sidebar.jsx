@@ -26,7 +26,7 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, onClose }) => {
   const logisticsItems = [
     { icon: Warehouse, label: 'Depots', live: true },
     { icon: RefreshCcw, label: 'Movement & Transactions', live: true },
-    { icon: Search, label: 'Stock Search & Tracking' },
+    { icon: Search, label: 'Stock Search & Tracking', live: true },
   ];
 
   const otherItems = [

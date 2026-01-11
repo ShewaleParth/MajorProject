@@ -248,18 +248,44 @@ const InventoryOverview = () => {
             const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
 
             const items = rows.slice(1).map(row => {
-                // Regex to handle CSV with quoted fields containing commas
-                const values = row.match(/(\"([^\"]*)\"|[^,]+)/g).map(v => v.replace(/^\"|\"$/g, '').trim());
+                // Robust CSV splitting that handles empty fields and quoted commas
+                const values = [];
+                let current = "";
+                let inQuotes = false;
+                for (let i = 0; i < row.length; i++) {
+                    const char = row[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current.trim());
+                        current = "";
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim());
+
                 const item = {};
                 headers.forEach((h, i) => {
-                    item[h] = values[i];
+                    if (values[i] !== undefined) {
+                        item[h] = values[i].replace(/^"|"$/g, '').trim();
+                    }
                 });
                 return item;
             });
 
             try {
                 const response = await api.bulkUpload(items);
-                alert(`Successfully processed ${response.results.success} items!`);
+                const { success, failed, errors } = response.results;
+
+                let alertMsg = `Import Complete:\n✅ ${success} Succeeded`;
+                if (failed > 0) {
+                    alertMsg += `\n❌ ${failed} Failed`;
+                    console.error('Import Errors:', errors);
+                    alertMsg += `\n\nCheck browser console for details.`;
+                }
+
+                alert(alertMsg);
                 fetchData();
             } catch (error) {
                 console.error('Failed to upload CSV:', error);
@@ -444,7 +470,7 @@ const InventoryOverview = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Search Bar in the Middle */}
                     <div className="search-input-wrapper-inline">
                         <Search size={18} className="search-icon-purple" />

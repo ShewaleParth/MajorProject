@@ -11,7 +11,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/ml-api': {
-        target: 'http://localhost:5001',
+        target: 'http://127.0.0.1:5001',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/ml-api/, '/api/ml')
       }

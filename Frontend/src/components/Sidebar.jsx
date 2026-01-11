@@ -16,7 +16,12 @@ import {
   X
 } from 'lucide-react';
 
+import { useAuth } from '../context/AuthContext';
+
 const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, onClose }) => {
+  const { user } = useAuth();
+
+
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', live: true },
     { icon: Package, label: 'Inventory Overview', live: true },
@@ -133,10 +138,14 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, onClose }) => {
 
       <div className="sidebar-footer">
         <div className="user-profile-sm glass-effect">
-          <div className="user-avatar shadow-md">P</div>
+          <div className="user-avatar shadow-md">
+            {user?.name?.charAt(0) || user?.first_name?.charAt(0) || 'U'}
+          </div>
           <div className="user-info">
-            <strong>Parth</strong>
-            <span>Admin Control Panel</span>
+            <strong>
+              {user?.name || user?.first_name || user?.firstName || user?.email?.split('@')[0] || 'User'}
+            </strong>
+            <span>{user?.role === 'admin' ? 'Super Admin' : 'Network Manager'}</span>
           </div>
           <Settings size={16} className="settings-icon spin-on-hover" />
         </div>

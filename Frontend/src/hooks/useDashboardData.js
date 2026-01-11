@@ -26,24 +26,35 @@ export const useDashboardData = () => {
             if (statsRes && statsRes.kpis) {
                 const kpiMap = {};
                 statsRes.kpis.forEach(kpi => kpiMap[kpi.title] = kpi);
+
+                const totalValue = statsRes.stats?.totalValue || 0;
+                const totalProducts = statsRes.stats?.totalProducts || 0;
+                const lowStockCount = statsRes.stats?.lowStockCount || 0;
+
                 setMetrics({
                     incoming: {
-                        value: kpiMap['Total Products']?.value || '0',
+                        value: totalProducts,
                         trend: kpiMap['Total Products']?.changeType === 'positive' ? 'up' : 'down',
                         trendValue: `${kpiMap['Total Products']?.change || 0}%`,
-                        categories: [{ label: 'Total active SKUs', percentage: 100, color: '#2563eb' }]
+                        categories: [
+                            { label: 'Total Products', value: totalProducts, percentage: 100, color: '#8b5cf6' }
+                        ]
                     },
                     outgoing: {
-                        value: kpiMap['Inventory Value']?.value || '₹0',
+                        value: totalValue,
                         trend: kpiMap['Inventory Value']?.changeType === 'positive' ? 'up' : 'down',
                         trendValue: `${kpiMap['Inventory Value']?.change || 0}%`,
-                        categories: [{ label: 'Market valuation', percentage: 100, color: '#10b981' }]
+                        categories: [
+                            { label: 'Net Valuation', value: `₹${(totalValue / 100000).toFixed(1)}L`, percentage: 100, color: '#10b981' }
+                        ]
                     },
                     undetected: {
-                        value: kpiMap['Depot Utilization']?.value || '0%',
-                        trend: kpiMap['Depot Utilization']?.changeType === 'positive' ? 'up' : 'down',
-                        trendValue: `${kpiMap['Depot Utilization']?.change || 0}%`,
-                        categories: [{ label: 'Storage efficiency', percentage: parseFloat(kpiMap['Depot Utilization']?.value) || 0, color: '#f59e0b' }]
+                        value: lowStockCount,
+                        trend: lowStockCount > 0 ? 'up' : 'neutral',
+                        trendValue: lowStockCount > 0 ? 'Action Required' : 'Optimal',
+                        categories: [
+                            { label: 'Critical Items', value: lowStockCount, percentage: (totalProducts > 0 ? (lowStockCount / totalProducts) * 100 : 0), color: '#f59e0b' }
+                        ]
                     }
                 });
             }
@@ -89,7 +100,7 @@ export const useDashboardData = () => {
             // 6. Process Transactions
             if (txRes && txRes.transactions) {
                 setTransactions(txRes.transactions.map(t => ({
-                    id: t._id,
+                    id: t.id || t._id,
                     timestamp: t.timestamp,
                     name: t.productName,
                     sku: t.productSku,

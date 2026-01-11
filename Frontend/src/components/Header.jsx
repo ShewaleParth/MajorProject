@@ -13,6 +13,22 @@ const Header = ({ theme, toggleTheme, title, onMenuClick }) => {
     navigate('/login');
   };
 
+  // Helper function to get user's full name
+  const getUserFullName = () => {
+    if (user) {
+      if (user.name) {
+        return user.name;
+      }
+      if (user.first_name && user.last_name) {
+        return `${user.first_name} ${user.last_name} `;
+      }
+      if (user.first_name) {
+        return user.first_name;
+      }
+    }
+    return 'User';
+  };
+
   return (
     <header className="header">
       <div className="header-left">
@@ -34,18 +50,21 @@ const Header = ({ theme, toggleTheme, title, onMenuClick }) => {
 
         <div className="header-actions">
           <button className="action-btn" onClick={toggleTheme}>
-            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+            {theme === 'light' ?
+              <Moon size={22} color="var(--primary)" strokeWidth={2.5} /> :
+              <Sun size={22} color="var(--primary)" strokeWidth={2.5} />
+            }
           </button>
           <button className="action-btn">
-            <Bell size={20} />
+            <Bell size={22} color="var(--primary)" strokeWidth={2.5} />
             <span className="notification-dot"></span>
           </button>
           <button className="action-btn">
-            <Grid size={20} />
+            <Grid size={22} color="var(--primary)" strokeWidth={2.5} />
           </button>
           <div className="user-profile-wrapper">
-            <div 
-              className="user-profile" 
+            <div
+              className="user-profile"
               onClick={() => setShowUserMenu(!showUserMenu)}
             >
               <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" />
@@ -55,7 +74,7 @@ const Header = ({ theme, toggleTheme, title, onMenuClick }) => {
                 <div className="user-menu-header">
                   <User size={16} />
                   <div className="user-info">
-                    <p className="user-name">{user?.first_name} {user?.last_name}</p>
+                    <p className="user-name">{getUserFullName()}</p>
                     <p className="user-email">{user?.email}</p>
                   </div>
                 </div>

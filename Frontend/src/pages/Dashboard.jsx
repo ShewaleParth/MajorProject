@@ -41,7 +41,7 @@ const Dashboard = () => {
             <div className="metrics-grid">
                 <MetricCard
                     title="Inbound Stock"
-                    value={formatValue(metrics?.incoming?.value, true)}
+                    value={formatValue(metrics?.incoming?.value, false)}
                     trend={metrics?.incoming?.trend}
                     trendValue={metrics?.incoming?.trendValue}
                     icon={Package}
@@ -106,7 +106,14 @@ const Dashboard = () => {
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="no-data-placeholder">No forecasting data available yet.</div>
+                            <div className="no-data-placeholder">
+                                <p style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
+                                    No sales transactions recorded yet
+                                </p>
+                                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                                    Sales trend will appear once you record stock-out transactions
+                                </p>
+                            </div>
                         )}
                     </div>
                     <div className="chart-footer">
@@ -122,7 +129,7 @@ const Dashboard = () => {
                 </div>
 
                 <div className="dashboard-grid">
-                    <div className="dashboard-section forecast-section">
+                    <div className="dashboard-section forecast-section full-width">
                         <div className="section-header">
                             <h3>Demand Intelligence</h3>
                             <div className="ai-badge">ARIMA V2.1 ACTIVE</div>
@@ -133,14 +140,16 @@ const Dashboard = () => {
                                     <div className="forecast-info">
                                         <span className="sku-label">{sku.sku}</span>
                                         <div className="product-name">{sku.name}</div>
+                                    </div>
+                                    <div className="forecast-stats">
                                         <div className="demand-stat">
                                             <TrendingUp size={14} className="trend-up" />
-                                            <span>Predicted: <b>{sku.predictedDemand} units</b> next 7d</span>
+                                            <span>AI Prediction: <b>{sku.predictedDemand} units</b> next 7d</span>
                                         </div>
                                     </div>
                                     <div className="forecast-action">
                                         <div className="stock-level">
-                                            <span>Stock: {sku.currentStock}</span>
+                                            <div className="stock-label-text">Inventory: {sku.currentStock}</div>
                                             <div className="stock-bar">
                                                 <div
                                                     className="stock-fill"
@@ -157,33 +166,9 @@ const Dashboard = () => {
                                     </div>
                                 </div>
                             ))}
-                        </div>
-                    </div>
-
-                    <div className="dashboard-section alerts-section">
-                        <div className="section-header">
-                            <h3>Network Alerts</h3>
-                            <span className="alert-count">{alerts.length} Active</span>
-                        </div>
-                        <div className="alerts-list">
-                            {alerts.map((alert) => (
-                                <div key={alert.id} className={`alert-card ${alert.type}`}>
-                                    <div className="alert-header">
-                                        <span className="alert-label">{alert.label}</span>
-                                        <span className="alert-date">{alert.date}</span>
-                                    </div>
-                                    <div className="alert-progress">
-                                        <div
-                                            className="progress-bar"
-                                            style={{ width: `${alert.percentage}%` }}
-                                        ></div>
-                                    </div>
-                                    <div className="alert-footer">
-                                        <span>Current: {alert.current}</span>
-                                        <span>Target: {alert.max}</span>
-                                    </div>
-                                </div>
-                            ))}
+                            {topSKUs.length === 0 && (
+                                <div className="no-data-placeholder"> No demand intelligence data available yet. </div>
+                            )}
                         </div>
                     </div>
                 </div>

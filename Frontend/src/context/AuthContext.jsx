@@ -20,29 +20,55 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
-    
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+
+    const initializeAuth = async () => {
+      if (storedToken && (!storedUser || storedUser === 'undefined' || storedUser === 'null')) {
+        try {
+          const response = await axios.get('/api/auth/verify', {
+            headers: { Authorization: `Bearer ${storedToken}` }
+          });
+          if (response.data.admin) {
+            setToken(storedToken);
+            setUser(response.data.admin);
+            localStorage.setItem('user', JSON.stringify(response.data.admin));
+          }
+        } catch (error) {
+          console.error('Failed to recover user session:', error);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      } else if (storedToken && storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setToken(storedToken);
+          setUser(parsedUser);
+        } catch (error) {
+          console.error('Error parsing stored user:', error);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      }
+      setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (email, password) => {
     try {
       const response = await axios.post('/api/auth/login', { email, password });
-      const { token, user } = response.data;
-      
+      const { token, admin } = response.data;
+
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(admin));
       setToken(token);
-      setUser(user);
-      
+      setUser(admin);
+
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Login failed. Please try again.' 
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Login failed. Please try again.'
       };
     }
   };
@@ -56,16 +82,16 @@ export const AuthProvider = ({ children }) => {
         password,
         confirm_password: confirmPassword
       });
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         message: response.data.message,
-        email: email 
+        email: email
       };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Signup failed. Please try again.' 
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Signup failed. Please try again.'
       };
     }
   };
@@ -73,18 +99,18 @@ export const AuthProvider = ({ children }) => {
   const verifyOTP = async (email, otp) => {
     try {
       const response = await axios.post('/api/auth/verify-otp', { email, otp });
-      const { token, user } = response.data;
-      
+      const { token, admin } = response.data;
+
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(admin));
       setToken(token);
-      setUser(user);
-      
+      setUser(admin);
+
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'OTP verification failed.' 
+      return {
+        success: false,
+        message: error.response?.data?.message || 'OTP verification failed.'
       };
     }
   };
@@ -92,14 +118,14 @@ export const AuthProvider = ({ children }) => {
   const forgotPassword = async (email) => {
     try {
       const response = await axios.post('/api/auth/forgot-password', { email });
-      return { 
-        success: true, 
-        message: response.data.message 
+      return {
+        success: true,
+        message: response.data.message
       };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Failed to send reset code.' 
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to send reset code.'
       };
     }
   };
@@ -111,14 +137,14 @@ export const AuthProvider = ({ children }) => {
         otp,
         newPassword
       });
-      return { 
-        success: true, 
-        message: response.data.message 
+      return {
+        success: true,
+        message: response.data.message
       };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Password reset failed.' 
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Password reset failed.'
       };
     }
   };

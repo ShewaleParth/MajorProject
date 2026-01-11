@@ -19,16 +19,34 @@ warnings.filterwarnings('ignore', category=FutureWarning)
 
 # Load environment variables
 from dotenv import load_dotenv
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+import os
+
+# Try multiple locations for .env to ensures we sync with server.js
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+env_paths = [
+    os.path.join(BASE_DIR, 'server', '.env'),
+    os.path.join(BASE_DIR, '.env'),
+    os.path.join(os.path.dirname(BASE_DIR), '.env')
+]
+for path in env_paths:
+    if os.path.exists(path):
+        load_dotenv(path)
+        print(f" Loaded environment from {path}")
 
 app = Flask(__name__)
 # Allow CORS for all domains in development, or restrict based on env
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # MongoDB Configuration
-MONGODB_URI = "mongodb+srv://luckyak619_db_user:luckyak619@cluster0.lcmjwhw.mongodb.net/sangrahak?retryWrites=true&w=majority&appName=Cluster0"
+# Try environment first, fallback to known atlas URI
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://luckyak619_db_user:luckyak619@cluster0.lcmjwhw.mongodb.net/sangrahak?retryWrites=true&w=majority&appName=Cluster0")
 client = MongoClient(MONGODB_URI)
-db = client['sangrahak']
+db = client.get_database() # Uses database name from URI or defaults
+if not db.name or db.name == 'test':
+    db = client['sangrahak']
+
+print(f" Connected to MongoDB Database: {db.name}")
+
 forecasts_collection = db['forecasts']
 products_collection = db['products']
 
@@ -976,6 +994,7 @@ if __name__ == '__main__':
         print(" All models loaded successfully")
         print(" API running on http://localhost:5001")
         print(" CORS enabled for http://localhost:5173")
-        app.run(debug=True, port=5001, host='0.0.0.0')
+        # use_reloader=False fixes WinError 10038 on Windows
+        app.run(debug=True, port=5001, host='0.0.0.0', use_reloader=False)
     else:
         print(" Failed to load models. Please check model paths.")

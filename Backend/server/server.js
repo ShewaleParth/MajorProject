@@ -354,6 +354,39 @@ const Depot = mongoose.model('Depot', depotSchema);
 const Transaction = mongoose.model('Transaction', transactionSchema);
 const Alert = mongoose.model('Alert', alertSchema);
 
+// Report Schema
+const reportSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  reportType: { type: String, required: true },
+  targetId: { type: mongoose.Schema.Types.ObjectId },
+  targetModel: { type: String, default: 'User' },
+  targetName: { type: String, default: 'System Wide' },
+  title: { type: String },
+  format: { type: String, default: 'pdf' },
+  dateRange: {
+    start: Date,
+    end: Date
+  },
+  status: { type: String, enum: ['processing', 'completed', 'failed'], default: 'processing' },
+  progress: { type: Number, default: 0 },
+  aiSummary: {
+    executive: String,
+    keyInsights: [String],
+    recommendations: [String],
+    alerts: [String],
+    metrics: mongoose.Schema.Types.Mixed
+  },
+  fileUrl: String,
+  fileName: String,
+  fileSize: Number,
+  error: String,
+  data: mongoose.Schema.Types.Mixed,
+  generatedAt: Date,
+  createdAt: { type: Date, default: Date.now }
+});
+
+const Report = mongoose.model('Report', reportSchema);
+
 // Utility Functions
 
 // Generate unique SKU
@@ -1416,6 +1449,7 @@ app.get('/api/products/:id/transactions', authenticateToken, async (req, res) =>
 });
 
 // Get detailed product view
+// Get detailed product view
 app.get('/api/products/:id/details', authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
@@ -1428,135 +1462,56 @@ app.get('/api/products/:id/details', authenticateToken, async (req, res) => {
 
     // Get transactions (filtered by userId for data isolation)
     const transactions = await Transaction.find({ productId: product._id, userId })
-      .sort({ timestamp: -1 })
-      .limit(100);
+      .sort({ timestamp: -1 });
 
-    // Calculate stock history (last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // Calculate Analytics
+    const now = new Date();
+    const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
 
-    const recentTransactions = await Transaction.find({
-      productId: product._id,
-      userId,
-      timestamp: { $gte: thirtyDaysAgo }
-    }).sort({ timestamp: 1 });
+    const monthlyTransactions = transactions.filter(t => new Date(t.timestamp) >= oneMonthAgo);
+    const weeklyTransactions = transactions.filter(t => new Date(t.timestamp) >= oneWeekAgo);
+    const yearlyTransactions = transactions.filter(t => new Date(t.timestamp) >= oneYearAgo);
 
-    let stockHistory = [];
+    const calculateStats = (txList) => {
+      const stockIn = txList.filter(t => t.transactionType === 'stock-in' || t.transactionType === 'transfer').reduce((sum, t) => sum + (t.quantity || 0), 0);
+      const stockOut = txList.filter(t => t.transactionType === 'stock-out').reduce((sum, t) => sum + (t.quantity || 0), 0);
+      const transfers = txList.filter(t => t.transactionType === 'transfer').length;
+      return {
+        stockIn,
+        stockOut,
+        netChange: stockIn - stockOut,
+        transfers,
+        total: txList.length
+      };
+    };
 
-    // Build stock history chronologically from transactions
-    if (recentTransactions.length > 0) {
-      // Start with the stock before first transaction
-      let runningStock = recentTransactions[0].previousStock;
-
-      // Add initial point
-      const firstDate = new Date(recentTransactions[0].timestamp);
-      firstDate.setDate(firstDate.getDate() - 1);
-      stockHistory.push({
-        date: firstDate.toISOString().split('T')[0],
-        stock: runningStock,
-        value: runningStock * product.price
-      });
-
-      // Add each transaction point
-      for (const t of recentTransactions) {
-        stockHistory.push({
-          date: t.timestamp.toISOString().split('T')[0],
-          stock: t.newStock,
-          value: t.newStock * product.price
-        });
+    // Group transactions by month for chart data
+    const monthlyData = {};
+    yearlyTransactions.forEach(tx => {
+      const monthLabel = new Date(tx.timestamp).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      if (!monthlyData[monthLabel]) {
+        monthlyData[monthLabel] = { month: monthLabel, stockIn: 0, stockOut: 0, transfers: 0 };
       }
-
-      // Add current point if last transaction isn't today
-      const lastTxDate = new Date(recentTransactions[recentTransactions.length - 1].timestamp).toISOString().split('T')[0];
-      const today = new Date().toISOString().split('T')[0];
-      if (lastTxDate !== today) {
-        stockHistory.push({
-          date: today,
-          stock: product.stock,
-          value: product.stock * product.price
-        });
-      }
-    } else {
-      // No transactions - just show current stock for last 7 days
-      const today = new Date();
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        stockHistory.push({
-          date: date.toISOString().split('T')[0],
-          stock: product.stock,
-          value: product.stock * product.price
-        });
-      }
-    }
-
-    // Calculate monthly stats
-    const monthlyStats = {};
-    transactions.forEach(t => {
-      const month = t.timestamp.toISOString().substring(0, 7);
-      if (!monthlyStats[month]) {
-        monthlyStats[month] = { month, stockIn: 0, stockOut: 0, avgStock: 0 };
-      }
-
-      if (t.transactionType === 'stock-in' || t.transactionType === 'transfer') {
-        monthlyStats[month].stockIn += t.quantity;
-      } else if (t.transactionType === 'stock-out') {
-        monthlyStats[month].stockOut += t.quantity;
-      }
+      if (tx.transactionType === 'stock-in' || tx.transactionType === 'transfer') monthlyData[monthLabel].stockIn += tx.quantity;
+      if (tx.transactionType === 'stock-out') monthlyData[monthLabel].stockOut += tx.quantity;
+      if (tx.transactionType === 'transfer') monthlyData[monthLabel].transfers += 1;
     });
 
-    // Depot distribution - use product's depotDistribution array
-    const depotDistribution = product.depotDistribution.map(depot => ({
-      depotId: depot.depotId,
-      depotName: depot.depotName,
-      quantity: depot.quantity,
-      percentage: product.stock > 0
-        ? ((depot.quantity / product.stock) * 100).toFixed(1)
-        : 0,
-      lastUpdated: depot.lastUpdated
-    })).filter(d => d.quantity > 0);
+    const chartData = Object.values(monthlyData).reverse();
 
-    // Get full depot info for location data
-    if (depotDistribution.length > 0) {
-      const depotIds = depotDistribution.map(d => d.depotId);
-      const depots = await Depot.find({ _id: { $in: depotIds }, userId });
-
-      depotDistribution.forEach(dist => {
-        const depot = depots.find(d => d._id.toString() === dist.depotId.toString());
-        if (depot) {
-          dist.location = depot.location;
-        }
-      });
-    }
-
-    // Depot info for backward compatibility (primary depot)
-    const depotInfo = depotDistribution.length > 0 ? {
-      depotId: depotDistribution[0].depotId,
-      depotName: depotDistribution[0].depotName,
-      quantity: depotDistribution[0].quantity
-    } : null;
-
-    // Generate alerts
-    const alerts = [];
-    if (product.status === 'low-stock') {
-      alerts.push({
-        type: 'low-stock',
-        message: `Stock level is below reorder point (${product.reorderPoint})`,
-        severity: 'medium'
-      });
-    } else if (product.status === 'out-of-stock') {
-      alerts.push({
-        type: 'out-of-stock',
-        message: 'Product is out of stock',
-        severity: 'high'
-      });
-    } else if (product.status === 'overstock') {
-      alerts.push({
-        type: 'overstock',
-        message: 'Stock level is significantly above reorder point',
-        severity: 'low'
-      });
-    }
+    // Prepare depot distribution with location data
+    const depotDistribution = await Promise.all((product.depotDistribution || []).map(async (dist) => {
+      const depot = await Depot.findById(dist.depotId);
+      return {
+        depotId: dist.depotId,
+        depotName: dist.depotName,
+        quantity: dist.quantity,
+        location: depot ? depot.location : 'Unknown',
+        lastUpdated: dist.lastUpdated
+      };
+    }));
 
     res.json({
       product: {
@@ -1570,13 +1525,14 @@ app.get('/api/products/:id/details', authenticateToken, async (req, res) => {
         price: product.price,
         status: product.status,
         image: product.image,
-        depotId: product.depotId,
-        depotName: product.depotName,
-        depotQuantity: product.depotQuantity
+        brand: product.brand || 'Generic',
+        leadTime: product.leadTime || 7,
+        dailySales: product.dailySales || 5,
+        depotDistribution: depotDistribution
       },
-      transactions: transactions.map(t => ({
+      transactions: transactions.slice(0, 50).map(t => ({
         id: t._id,
-        transactionType: t.transactionType,
+        type: t.transactionType,
         quantity: t.quantity,
         fromDepot: t.fromDepot,
         toDepot: t.toDepot,
@@ -1586,11 +1542,13 @@ app.get('/api/products/:id/details', authenticateToken, async (req, res) => {
         performedBy: t.performedBy,
         timestamp: t.timestamp
       })),
-      stockHistory,
-      monthlyStats: Object.values(monthlyStats),
-      depotInfo,
-      depotDistribution, // NEW: Array of depots storing this product
-      alerts
+      analytics: {
+        weeklyStats: calculateStats(weeklyTransactions),
+        monthlyStats: calculateStats(monthlyTransactions),
+        yearlyStats: calculateStats(yearlyTransactions),
+        chartData: chartData,
+        totalTransactions: transactions.length
+      }
     });
   } catch (error) {
     console.error('Error fetching product details:', error);
@@ -1712,7 +1670,19 @@ app.get('/api/depots/:id/details', authenticateToken, async (req, res) => {
       }
     }
 
-    // Get transaction stats for this depot
+    // Get recent transactions for this depot (last 30 days)
+    const recentTransactions = await Transaction.find({
+      userId,
+      $or: [
+        { fromDepotId: depotId },
+        { toDepotId: depotId }
+      ],
+      timestamp: { $gte: thirtyDaysAgo }
+    })
+      .sort({ timestamp: -1 })
+      .limit(50);
+
+    // Get all transactions for stats
     const transactions = await Transaction.find({
       userId,
       $or: [
@@ -1721,31 +1691,24 @@ app.get('/api/depots/:id/details', authenticateToken, async (req, res) => {
       ]
     });
 
-    const transactionStats = {
-      stockIn: 0,
-      stockOut: 0,
-      transfers: 0
-    };
-
-    transactions.forEach(t => {
-      if (t.transactionType === 'stock-in' && t.toDepotId?.toString() === depotId) {
-        transactionStats.stockIn++;
-      } else if (t.transactionType === 'stock-out' && t.fromDepotId?.toString() === depotId) {
-        transactionStats.stockOut++;
-      } else if (t.transactionType === 'transfer') {
-        transactionStats.transfers++;
+    // Format products with full details for inventory table
+    const inventory = [];
+    for (const depotProduct of depot.products) {
+      const product = await Product.findOne({ _id: depotProduct.productId, userId });
+      if (product) {
+        inventory.push({
+          productId: depotProduct.productId,
+          productName: depotProduct.productName,
+          productSku: depotProduct.productSku,
+          sku: depotProduct.productSku, // Alias for consistency
+          quantity: depotProduct.quantity,
+          lastUpdated: depotProduct.lastUpdated,
+          category: product.category,
+          price: product.price,
+          status: product.status
+        });
       }
-    });
-
-    // Get top products by quantity and value
-    const topProducts = products
-      .map(p => ({
-        name: p.productName,
-        quantity: p.quantity,
-        value: p.quantity * (p.product?.price || 0)
-      }))
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, 10);
+    }
 
     res.json({
       depot: {
@@ -1755,12 +1718,26 @@ app.get('/api/depots/:id/details', authenticateToken, async (req, res) => {
         capacity: depot.capacity,
         currentUtilization: depot.currentUtilization,
         itemsStored: depot.itemsStored,
-        status: depot.status
+        status: depot.status,
+        inventory: inventory, // Add inventory array to depot object
+        recentTransactions: recentTransactions.map(t => ({ // Add recent transactions to depot object
+          id: t._id,
+          type: t.transactionType,
+          productName: t.productName,
+          productSku: t.productSku,
+          quantity: t.quantity,
+          fromDepot: t.fromDepot,
+          toDepot: t.toDepot,
+          timestamp: t.timestamp,
+          reason: t.reason
+        }))
       },
-      products,
       utilizationHistory,
-      transactionStats,
-      topProducts
+      transactionStats: {
+        stockIn: transactions.filter(t => t.transactionType === 'stock-in' && t.toDepotId?.toString() === depotId).length,
+        stockOut: transactions.filter(t => t.transactionType === 'stock-out' && t.fromDepotId?.toString() === depotId).length,
+        transfers: transactions.filter(t => t.transactionType === 'transfer').length
+      }
     });
 
   } catch (error) {
@@ -3261,6 +3238,10 @@ app.post('/api/products/bulk-with-transactions', async (req, res) => {
     res.status(500).json({ message: 'Server error during bulk import', error: error.message });
   }
 });
+
+// Reports Routes
+const reportsRouter = require('./routes/reports');
+app.use('/api/reports', reportsRouter);
 
 // Socket.io Connection Handle
 io.on('connection', (socket) => {

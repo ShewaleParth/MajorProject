@@ -11,11 +11,11 @@ class AIReportService {
   async analyzeDepotData(depotData, transactions, products) {
     const utilizationPercent = ((depotData.currentUtilization / depotData.capacity) * 100).toFixed(1);
     const totalValue = products.reduce((sum, p) => sum + (p.stock * (p.price || 100)), 0);
-    
+
     const stockInCount = transactions.filter(t => t.type === 'stock-in').length;
     const stockOutCount = transactions.filter(t => t.type === 'stock-out').length;
     const transferCount = transactions.filter(t => t.type === 'transfer').length;
-    
+
     const lowStockItems = products.filter(p => p.stock < 50);
     const overstockItems = products.filter(p => p.stock > 500);
     const outOfStockItems = products.filter(p => p.stock === 0);
@@ -46,9 +46,9 @@ STOCK HEALTH ANALYSIS:
 - Optimal Stock: ${products.length - lowStockItems.length - overstockItems.length - outOfStockItems.length}
 
 TOP 5 PRODUCTS BY QUANTITY:
-${products.sort((a, b) => b.quantity - a.quantity).slice(0, 5).map((p, i) => 
-  `${i + 1}. ${(p.name || p.productName)} - ${p.stock} units (₹${(p.stock * (p.price || 100)).toLocaleString()})`
-).join('\n')}
+${products.sort((a, b) => b.quantity - a.quantity).slice(0, 5).map((p, i) =>
+      `${i + 1}. ${(p.name || p.productName)} - ${p.stock} units (₹${(p.stock * (p.price || 100)).toLocaleString()})`
+    ).join('\n')}
 
 CRITICAL ISSUES:
 ${utilizationPercent > 90 ? '- CRITICAL: Depot is near maximum capacity!' : ''}
@@ -103,7 +103,7 @@ Be specific, data-driven, and actionable in your analysis.
       });
 
       const analysis = JSON.parse(completion.choices[0].message.content);
-      
+
       // Ensure all required fields exist
       return {
         executiveSummary: analysis.executiveSummary || 'Analysis completed successfully.',
@@ -144,9 +144,9 @@ SYSTEM OVERVIEW:
 
 CATEGORY BREAKDOWN:
 ${Object.entries(categoryBreakdown).map(([cat, items]) => {
-  const catValue = items.reduce((s, i) => s + (i.stock * (i.price || 100)), 0);
-  return `- ${cat}: ${items.length} items, ₹${catValue.toLocaleString()}`;
-}).join('\n')}
+      const catValue = items.reduce((s, i) => s + (i.stock * (i.price || 100)), 0);
+      return `- ${cat}: ${items.length} items, ₹${catValue.toLocaleString()}`;
+    }).join('\n')}
 
 STOCK HEALTH DISTRIBUTION:
 - Low Stock: ${products.filter(p => p.stock < p.reorderPoint).length} items
@@ -163,9 +163,9 @@ Provide JSON analysis with: executiveSummary, keyInsights, recommendations, aler
     try {
       const completion = await groq.chat.completions.create({
         messages: [
-          { 
-            role: 'system', 
-            content: 'You are an inventory optimization expert with deep knowledge of supply chain management, demand forecasting, and warehouse efficiency.' 
+          {
+            role: 'system',
+            content: 'You are an inventory optimization expert with deep knowledge of supply chain management, demand forecasting, and warehouse efficiency.'
           },
           { role: 'user', content: prompt }
         ],
@@ -210,13 +210,13 @@ Provide JSON analysis with: executiveSummary, keyInsights, recommendations, aler
   /**
    * INVENTORY REPORTS
    */
-  
+
   // 1. Inventory Summary
   async analyzeInventorySummary(products, depots, transactions) {
     const totalValue = products.reduce((sum, p) => sum + (p.stock * (p.price || 100)), 0);
     const lowStock = products.filter(p => p.stock < (p.reorderPoint || 50));
     const outOfStock = products.filter(p => p.stock === 0);
-    
+
     const prompt = `Analyze this inventory summary:
 - Total Products: ${products.length}
 - Total Value: ₹${totalValue.toLocaleString()}
@@ -234,16 +234,24 @@ Provide JSON with: executiveSummary, keyInsights (4), recommendations (4), alert
   async analyzeStockLevels(products, depots) {
     const byDepot = {};
     products.forEach(p => {
-      const depotId = p.depotId || 'unassigned';
-      if (!byDepot[depotId]) byDepot[depotId] = [];
-      byDepot[depotId].push(p);
+      if (p.depotDistribution && p.depotDistribution.length > 0) {
+        p.depotDistribution.forEach(dist => {
+          const dId = dist.depotId?.toString() || 'unassigned';
+          if (!byDepot[dId]) byDepot[dId] = [];
+          byDepot[dId].push({ ...p, stock: dist.quantity });
+        });
+      } else {
+        const dId = p.depotId?.toString() || 'unassigned';
+        if (!byDepot[dId]) byDepot[dId] = [];
+        byDepot[dId].push(p);
+      }
     });
 
     const prompt = `Analyze stock levels across ${depots.length} depots:
 ${Object.entries(byDepot).map(([id, items]) => {
-  const depot = depots.find(d => d._id.toString() === id);
-  return `- ${depot?.name || 'Unassigned'}: ${items.length} SKUs, ${items.reduce((s, i) => s + i.stock, 0)} units`;
-}).join('\n')}
+      const depot = depots.find(d => d._id.toString() === id);
+      return `- ${depot?.name || 'Unassigned'}: ${items.length} SKUs, ${items.reduce((s, i) => s + i.stock, 0)} units`;
+    }).join('\n')}
 
 Provide JSON with stock adequacy analysis, reorder suggestions, distribution insights`;
 
@@ -254,14 +262,14 @@ Provide JSON with stock adequacy analysis, reorder suggestions, distribution ins
   async analyzeLowStock(products) {
     const critical = products.filter(p => p.stock === 0);
     const low = products.filter(p => p.stock > 0 && p.stock < (p.reorderPoint || 50));
-    
+
     const prompt = `Urgent low stock analysis:
 - Critical (Out of Stock): ${critical.length} items
 - Low Stock: ${low.length} items
 - Total at Risk: ${critical.length + low.length}
 
 Top 5 Critical:
-${critical.slice(0, 5).map((p, i) => `${i+1}. ${(p.name || p.productName)} - OUT OF STOCK`).join('\n')}
+${critical.slice(0, 5).map((p, i) => `${i + 1}. ${(p.name || p.productName)} - OUT OF STOCK`).join('\n')}
 
 Provide JSON with urgency assessment, reorder priorities, impact analysis`;
 
@@ -296,7 +304,10 @@ Provide JSON with movement patterns, trends, efficiency insights`;
       name: d.name,
       utilization: ((d.currentUtilization / d.capacity) * 100).toFixed(1),
       available: d.capacity - d.currentUtilization,
-      products: products.filter(p => p.depotId?.toString() === d._id.toString()).length
+      products: products.filter(p =>
+        p.depotId?.toString() === d._id.toString() ||
+        p.depotDistribution?.some(dist => dist.depotId?.toString() === d._id.toString())
+      ).length
     }));
 
     const prompt = `Analyze depot capacity utilization:
@@ -310,9 +321,15 @@ Provide JSON with utilization efficiency, expansion needs, optimization suggesti
   // 6. Depot Comparison
   async compareDepots(depots, products, transactions) {
     const comparison = depots.map(d => {
-      const depotProducts = products.filter(p => p.depotId?.toString() === d._id.toString());
-      const depotTrans = transactions.filter(t => 
-        t.fromDepot?.toString() === d._id.toString() || t.toDepot?.toString() === d._id.toString()
+      const depotProducts = products.filter(p =>
+        p.depotId?.toString() === d._id.toString() ||
+        p.depotDistribution?.some(dist => dist.depotId?.toString() === d._id.toString())
+      );
+      const depotTrans = transactions.filter(t =>
+        t.fromDepotId?.toString() === d._id.toString() ||
+        t.toDepotId?.toString() === d._id.toString() ||
+        t.fromDepot === d._id.toString() ||
+        t.toDepot === d._id.toString()
       );
       return {
         name: d.name,
@@ -350,7 +367,7 @@ Provide JSON with comparative analysis, rankings, best practices, improvement ar
 - Total Products: ${products.length}
 
 Top Categories by Value:
-${categoryValues.slice(0, 5).map((c, i) => `${i+1}. ${c.category}: ₹${c.value.toLocaleString()} (${c.items} items)`).join('\n')}
+${categoryValues.slice(0, 5).map((c, i) => `${i + 1}. ${c.category}: ₹${c.value.toLocaleString()} (${c.items} items)`).join('\n')}
 
 Provide JSON with value distribution, risk assessment, optimization opportunities`;
 
@@ -479,11 +496,11 @@ Example format:
       });
 
       const analysis = JSON.parse(completion.choices[0].message.content);
-      
+
       // Ensure proper format with fallbacks
       return {
-        executiveSummary: typeof analysis.executiveSummary === 'string' 
-          ? analysis.executiveSummary 
+        executiveSummary: typeof analysis.executiveSummary === 'string'
+          ? analysis.executiveSummary
           : 'Analysis completed successfully.',
         keyInsights: Array.isArray(analysis.keyInsights) ? analysis.keyInsights : [],
         recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],

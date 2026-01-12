@@ -1,0 +1,432 @@
+/* Supplier Risk Command Center - Pro Professional UI */
+
+:root {
+    --risk-critical: #ef4444;
+    --risk-high: #f59e0b;
+    --risk-medium: #eab308;
+    --risk-low: #10b981;
+    --risk-safe: #3b82f6;
+    --bg-surface: #f8fafc;
+}
+
+.supplier-command-center {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 20px;
+    background: var(--bg-surface);
+    min-height: 100vh;
+}
+
+/* 1. Header Row */
+.command-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+}
+
+.header-title-group h1 {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.header-title-group p {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin: 4px 0 0;
+}
+
+.header-summary-stats {
+    display: flex;
+    gap: 20px;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-main);
+    border-radius: 30px;
+    border: 1px solid var(--border);
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+/* 2. KPI Cards */
+.kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.kpi-card-v2 {
+    background: white;
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.kpi-card-v2 .label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.kpi-card-v2 .value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+/* 3. Main Content Grid (Table + AI Ops Feed) */
+.command-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    /* Reduced from 320px */
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.table-panel {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.table-header-alt {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-header-alt h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.table-tracking-info {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* Table Style Refinement */
+.table-responsive-wrapper {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.radar-table-v2 {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.radar-table-v2 th {
+    text-align: left;
+    padding: 12px 12px;
+    /* Reduced from 16x 24px */
+    background: var(--bg-main);
+    color: var(--text-muted);
+    font-size: 10px;
+    /* Highly optimized font size */
+    font-weight: 700;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.radar-table-v2 td {
+    padding: 12px 12px;
+    /* Compressed padding */
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+/* Space-Saving Column Alignment & Widths */
+.radar-table-v2 th:nth-child(2),
+.radar-table-v2 th:nth-child(3),
+.radar-table-v2 th:nth-child(4) {
+    width: 120px;
+    /* Compressed from 140px */
+}
+
+.radar-table-v2 th:nth-child(5),
+.radar-table-v2 td:nth-child(5) {
+    text-align: center;
+    width: 80px;
+    /* Compressed from 100px */
+}
+
+.radar-table-v2 th:nth-child(6),
+.radar-table-v2 td:nth-child(6) {
+    text-align: center;
+    width: 70px;
+    /* Ultra-compact status */
+}
+
+.radar-table-v2 td:nth-child(5) .risk-score-badge {
+    margin: 0 auto;
+}
+
+.radar-table-v2 th:nth-child(7),
+.radar-table-v2 td:nth-child(7) {
+    text-align: right;
+    width: 100px;
+    /* Compressed from 120px */
+}
+
+.radar-table-v2 tr:hover {
+    background: #f8fafc;
+}
+
+.risk-score-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 14px;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Risk Progress Bars */
+.intel-drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.intel-drawer {
+    width: 900px;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+.risk-bar-container {
+    width: 80px;
+    /* Compressed bars from 100px */
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.risk-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+}
+
+/* 4. AI Ops Feed Panel */
+.ai-ops-feed {
+    position: sticky;
+    top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.feed-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 15px;
+    padding: 0 4px;
+}
+
+.alert-item {
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    gap: 12px;
+    transition: transform 0.2s ease;
+}
+
+.alert-item:hover {
+    transform: translateX(-4px);
+    border-color: var(--primary);
+}
+
+.alert-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.alert-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.alert-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.alert-meta {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* 5. Detailed Drawer Refinement */
+.drawer-content-v2 {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 24px;
+    height: 100%;
+}
+
+.drawer-chart-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.drawer-insight-section {
+    background: #f1f5f9;
+    padding: 24px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.ai-reason-bubble {
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    border-left: 4px solid var(--primary);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+/* Utility Animations */
+.pulse-red {
+    animation: pulseRed 2s infinite;
+}
+
+@keyframes pulseRed {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
+/* Modal and Overlay Refinements */
+.intel-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.drilldown-modal {
+    background: #ffffff !important;
+    border-radius: 20px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    /* Stronger shadow */
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: var(--text-main);
+}
+
+.intel-modal-header {
+    padding: 24px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border);
+}
+
+.intel-modal-body {
+    background: #ffffff !important;
+    padding: 24px;
+}
+
+.task-item {
+    background: #f1f5f9;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+}
+
+.task-item:hover {
+    border-color: var(--primary);
+    background: white;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}

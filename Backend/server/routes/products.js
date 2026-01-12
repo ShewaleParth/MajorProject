@@ -186,13 +186,13 @@ router.post('/bulk', async (req, res, next) => {
     const productsData = req.body;
     const userId = req.userId;
 
-    console.log('Bulk upload request received:', { 
+    console.log('Bulk upload request received:', {
       itemCount: Array.isArray(productsData) ? productsData.length : 'not an array',
       firstItem: Array.isArray(productsData) && productsData.length > 0 ? productsData[0] : null
     });
 
     if (!Array.isArray(productsData)) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Input must be an array of products',
         received: typeof productsData
       });
@@ -201,6 +201,17 @@ router.post('/bulk', async (req, res, next) => {
     if (productsData.length === 0) {
       return res.status(400).json({ message: 'No products provided' });
     }
+
+    // Fetch all user's depots for random assignment
+    const userDepots = await Depot.find({ userId });
+
+    if (userDepots.length === 0) {
+      return res.status(400).json({
+        message: 'No depots found. Please create at least one depot before uploading products.'
+      });
+    }
+
+    console.log(`✅ Found ${userDepots.length} depots for random assignment`);
 
     const results = {
       success: 0,
@@ -232,10 +243,9 @@ router.post('/bulk', async (req, res, next) => {
         let product = await Product.findOne({ sku, userId });
 
         if (product) {
-          // Update existing
+          // Update existing product
           if (name) product.name = name;
           if (category) product.category = category;
-          if (stock !== undefined) product.stock = Number(stock);
           if (reorderPoint !== undefined) product.reorderPoint = Number(reorderPoint);
           if (supplier) product.supplier = supplier;
           if (price !== undefined) product.price = Number(price);
@@ -243,15 +253,66 @@ router.post('/bulk', async (req, res, next) => {
           if (weeklySales !== undefined) product.weeklySales = Number(weeklySales);
           if (brand) product.brand = brand;
           if (leadTime !== undefined) product.leadTime = Number(leadTime);
+
+          // Add stock to existing depot distribution or assign to random depot
+          const stockToAdd = Number(stock) || 0;
+          if (stockToAdd > 0) {
+            // Randomly select a depot
+            const randomDepot = userDepots[Math.floor(Math.random() * userDepots.length)];
+
+            // Check if product already has stock in this depot
+            const existingDepotIndex = product.depotDistribution.findIndex(
+              d => d.depotId.toString() === randomDepot._id.toString()
+            );
+
+            if (existingDepotIndex >= 0) {
+              // Add to existing depot distribution
+              product.depotDistribution[existingDepotIndex].quantity += stockToAdd;
+              product.depotDistribution[existingDepotIndex].lastUpdated = new Date();
+            } else {
+              // Add new depot to distribution
+              product.depotDistribution.push({
+                depotId: randomDepot._id,
+                depotName: randomDepot.name,
+                quantity: stockToAdd,
+                lastUpdated: new Date()
+              });
+            }
+
+            // Update depot's products array
+            const depotProductIndex = randomDepot.products.findIndex(
+              p => p.productId.toString() === product._id.toString()
+            );
+
+            if (depotProductIndex >= 0) {
+              randomDepot.products[depotProductIndex].quantity += stockToAdd;
+              randomDepot.products[depotProductIndex].lastUpdated = new Date();
+            } else {
+              randomDepot.products.push({
+                productId: product._id,
+                productName: product.name,
+                productSku: product.sku,
+                quantity: stockToAdd,
+                lastUpdated: new Date()
+              });
+            }
+
+            await randomDepot.save();
+            console.log(`📦 Added ${stockToAdd} units of ${sku} to depot: ${randomDepot.name}`);
+          }
+
           product.updatedAt = new Date();
         } else {
-          // Create new
+          // Create new product with random depot assignment
+          const stockQty = Number(stock) || 0;
+          const randomDepot = userDepots[Math.floor(Math.random() * userDepots.length)];
+
           product = new Product({
             userId,
             sku,
             name,
             category: category || 'Uncategorized',
-            stock: Number(stock) || 0,
+            stock: stockQty,
             reorderPoint: Number(reorderPoint) || 10,
             supplier: supplier || 'Unknown',
             price: Number(price) || 0,
@@ -260,8 +321,27 @@ router.post('/bulk', async (req, res, next) => {
             brand: brand || 'Generic',
             leadTime: Number(leadTime) || 7,
             image: item.image || '',
-            depotDistribution: []
+            depotDistribution: stockQty > 0 ? [{
+              depotId: randomDepot._id,
+              depotName: randomDepot.name,
+              quantity: stockQty,
+              lastUpdated: new Date()
+            }] : []
           });
+
+          // Add product to depot
+          if (stockQty > 0) {
+            randomDepot.products.push({
+              productId: product._id,
+              productName: product.name,
+              productSku: product.sku,
+              quantity: stockQty,
+              lastUpdated: new Date()
+            });
+
+            await randomDepot.save();
+            console.log(`✅ Assigned new product ${sku} to depot: ${randomDepot.name}`);
+          }
         }
 
         await product.save();
@@ -270,10 +350,10 @@ router.post('/bulk', async (req, res, next) => {
       } catch (err) {
         console.error(`Error processing item ${item.sku}:`, err.message);
         results.failed++;
-        results.errors.push({ 
-          sku: item.sku || 'unknown', 
+        results.errors.push({
+          sku: item.sku || 'unknown',
           error: err.message,
-          item: item // Include the problematic item for debugging
+          item: item
         });
       }
     }
@@ -327,7 +407,7 @@ router.post('/bulk-with-transactions', async (req, res, next) => {
         transactions.sort((a, b) => new Date(a.transactionDate) - new Date(b.transactionDate));
 
         const firstTransaction = transactions[0];
-        
+
         // Validate required fields
         if (!firstTransaction.sku || !firstTransaction.name) {
           throw new Error(`Missing SKU or Name for product: ${sku}`);
@@ -337,7 +417,7 @@ router.post('/bulk-with-transactions', async (req, res, next) => {
         let depot = null;
         if (firstTransaction.depotName) {
           depot = await Depot.findOne({ name: firstTransaction.depotName, userId });
-          
+
           if (!depot) {
             // Auto-create depot
             depot = new Depot({
@@ -421,7 +501,7 @@ router.post('/bulk-with-transactions', async (req, res, next) => {
 
         // Update product with final stock
         product.stock = Math.max(0, currentStock);
-        
+
         // Update depot distribution
         if (depot && depotStock > 0) {
           const depotDistIndex = product.depotDistribution.findIndex(
@@ -465,7 +545,7 @@ router.post('/bulk-with-transactions', async (req, res, next) => {
 
           depot.itemsStored = depot.products.length;
           depot.currentUtilization = depot.products.reduce((sum, p) => sum + p.quantity, 0);
-          
+
           // Update depot status based on utilization
           const utilizationPercentage = (depot.currentUtilization / depot.capacity) * 100;
           if (utilizationPercentage >= 90) {
@@ -475,7 +555,7 @@ router.post('/bulk-with-transactions', async (req, res, next) => {
           } else {
             depot.status = 'normal';
           }
-          
+
           depot.updatedAt = new Date();
           await depot.save();
         }
@@ -610,7 +690,7 @@ router.get('/:id', async (req, res, next) => {
   try {
     const userId = req.userId;
     const product = await Product.findOne({ _id: req.params.id, userId });
-    
+
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -665,7 +745,7 @@ router.delete('/:id', async (req, res, next) => {
   try {
     const userId = req.userId;
     const Alert = require('../models/Alert');
-    
+
     const product = await Product.findOne({ _id: req.params.id, userId });
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
@@ -673,7 +753,7 @@ router.delete('/:id', async (req, res, next) => {
 
     await Product.findByIdAndDelete(req.params.id);
     await Alert.deleteMany({ productId: req.params.id, userId });
-    
+
     res.json({ message: 'Product deleted successfully' });
   } catch (error) {
     next(error);

@@ -13,6 +13,9 @@ import warnings
 import os
 from bson import ObjectId
 import traceback
+import sys
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__))))
+from supplier_intelligence.supplier_routes import supplier_routes
 
 warnings.filterwarnings('ignore', category=ConvergenceWarning)
 warnings.filterwarnings('ignore', category=FutureWarning)
@@ -985,6 +988,11 @@ def get_forecast_by_sku(sku):
     except Exception as e:
         print(f"Error in forecast fetch: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+
+# Register Supplier Intelligence Routes
+app.register_blueprint(supplier_routes, url_prefix='/api/supplier')
 
 
 if __name__ == '__main__':

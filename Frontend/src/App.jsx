@@ -57,7 +57,7 @@ function App() {
         return <InventoryOverview />;
       case 'Depots':
         return <Depots />;
-      case 'Forecasting Analysis':
+      case 'Supplier Risk Radar':
         return <ForecastingAnalysis />;
       case 'Reports Export':
         return <Reports />;
@@ -92,22 +92,22 @@ function App() {
               <ProtectedRoute>
                 <div className="app-container">
                   {/* Sidebar Overlay for Mobile */}
-                  <div 
+                  <div
                     className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`}
                     onClick={closeSidebar}
                   />
-                  
-                  <Sidebar 
-                    activeItem={activeItem} 
+
+                  <Sidebar
+                    activeItem={activeItem}
                     setActiveItem={setActiveItem}
                     isMobileOpen={isSidebarOpen}
                     onClose={closeSidebar}
                   />
-                  
+
                   <div className="main-layout">
-                    <Header 
-                      theme={theme} 
-                      toggleTheme={toggleTheme} 
+                    <Header
+                      theme={theme}
+                      toggleTheme={toggleTheme}
                       title={activeItem}
                       onMenuClick={toggleSidebar}
                     />

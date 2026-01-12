@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-    ArrowLeft, Package, TrendingUp, TrendingDown, DollarSign, 
-    Warehouse, Calendar, Filter, Download, Plus, AlertCircle 
+import {
+    ArrowLeft, Package, TrendingUp, TrendingDown, DollarSign,
+    Warehouse, Calendar, Filter, Download, Plus, AlertCircle
 } from 'lucide-react';
-import { 
+import {
     AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-    XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+    XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { api } from '../utils/api';
 import AddTransactionModal from '../components/AddTransactionModal';
@@ -31,6 +31,7 @@ const ProductDetailsView = () => {
         setLoading(true);
         try {
             const data = await api.getProductDetails(productId);
+            console.log('🔍 Received Product Details:', data);
             setProductData(data);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to load product details');
@@ -73,21 +74,22 @@ const ProductDetailsView = () => {
     const { product, transactions, analytics } = productData;
 
     // Prepare depot distribution data for pie chart
-    const depotChartData = product.depotDistribution.map((depot, idx) => ({
-        name: depot.depotName,
-        value: depot.quantity,
+    const depotChartData = (product?.depotDistribution || []).map((depot, idx) => ({
+        name: depot.depotName || 'Unknown Depot',
+        value: depot.quantity || 0,
         color: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'][idx % 5]
     }));
 
     // Get stats based on selected time filter
     const getStats = () => {
+        if (!analytics) return null;
         if (timeFilter === 'weekly') return analytics.weeklyStats;
         if (timeFilter === 'yearly') return analytics.yearlyStats;
         return analytics.monthlyStats;
     };
 
-    const stats = getStats();
-    const stockValue = product.stock * product.price;
+    const stats = getStats() || { stockIn: 0, stockOut: 0, netChange: 0, transfers: 0, total: 0 };
+    const stockValue = (product?.stock || 0) * (product?.price || 0);
 
     return (
         <div className="product-details-container">
@@ -117,8 +119,8 @@ const ProductDetailsView = () => {
             {/* Product Overview Card */}
             <div className="product-overview-card">
                 <div className="product-image-section">
-                    <img 
-                        src={product.image || `https://api.dicebear.com/7.x/identicon/svg?seed=${product.sku}`} 
+                    <img
+                        src={product.image || `https://api.dicebear.com/7.x/identicon/svg?seed=${product.sku}`}
                         alt={product.name}
                         className="product-image-large"
                     />
@@ -129,8 +131,8 @@ const ProductDetailsView = () => {
                             <h1>{product.name}</h1>
                             <p className="product-sku">SKU: {product.sku}</p>
                         </div>
-                        <span className={`status-badge status-${product.status}`}>
-                            {product.status.toUpperCase()}
+                        <span className={`status-badge status-${product.status || 'unknown'}`}>
+                            {(product.status || 'unknown').toUpperCase()}
                         </span>
                     </div>
                     <div className="product-meta-grid">
@@ -148,7 +150,7 @@ const ProductDetailsView = () => {
                         </div>
                         <div className="meta-item">
                             <span className="meta-label">Lead Time</span>
-                            <span className="meta-value">{product.leadTime} days</span>
+                            <span className="meta-value">{product.leadTime || 0} days</span>
                         </div>
                     </div>
                 </div>
@@ -196,19 +198,19 @@ const ProductDetailsView = () => {
 
             {/* Time Filter Tabs */}
             <div className="time-filter-tabs">
-                <button 
+                <button
                     className={`filter-tab ${timeFilter === 'weekly' ? 'active' : ''}`}
                     onClick={() => setTimeFilter('weekly')}
                 >
                     Weekly
                 </button>
-                <button 
+                <button
                     className={`filter-tab ${timeFilter === 'monthly' ? 'active' : ''}`}
                     onClick={() => setTimeFilter('monthly')}
                 >
                     Monthly
                 </button>
-                <button 
+                <button
                     className={`filter-tab ${timeFilter === 'yearly' ? 'active' : ''}`}
                     onClick={() => setTimeFilter('yearly')}
                 >
@@ -254,13 +256,13 @@ const ProductDetailsView = () => {
                 <div className="chart-card">
                     <h3>Transaction Volume</h3>
                     <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={analytics.chartData}>
+                        <BarChart data={analytics?.chartData || []}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                             <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 12 }} />
                             <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                            <Tooltip 
-                                contentStyle={{ 
-                                    background: '#1e1b4b', 
+                            <Tooltip
+                                contentStyle={{
+                                    background: '#1e1b4b',
                                     border: '1px solid #4c1d95',
                                     borderRadius: '8px'
                                 }}
@@ -318,24 +320,24 @@ const ProductDetailsView = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {product.depotDistribution.length > 0 ? (
+                            {(product.depotDistribution || []).length > 0 ? (
                                 product.depotDistribution.map((depot, idx) => (
                                     <tr key={idx}>
                                         <td><strong>{depot.depotName}</strong></td>
                                         <td>{depot.quantity} units</td>
                                         <td>
                                             <div className="percentage-bar">
-                                                <div 
-                                                    className="percentage-fill" 
-                                                    style={{ 
-                                                        width: `${(depot.quantity / product.stock) * 100}%`,
+                                                <div
+                                                    className="percentage-fill"
+                                                    style={{
+                                                        width: `${product.stock > 0 ? (depot.quantity / product.stock) * 100 : 0}%`,
                                                         background: depotChartData[idx]?.color || '#8b5cf6'
                                                     }}
                                                 ></div>
-                                                <span>{((depot.quantity / product.stock) * 100).toFixed(1)}%</span>
+                                                <span>{product.stock > 0 ? ((depot.quantity / product.stock) * 100).toFixed(1) : 0}%</span>
                                             </div>
                                         </td>
-                                        <td>{new Date(depot.lastUpdated).toLocaleDateString()}</td>
+                                        <td>{depot.lastUpdated ? new Date(depot.lastUpdated).toLocaleDateString() : 'Never'}</td>
                                     </tr>
                                 ))
                             ) : (
@@ -376,11 +378,11 @@ const ProductDetailsView = () => {
                                     <tr key={tx.id}>
                                         <td>{new Date(tx.timestamp).toLocaleString()}</td>
                                         <td>
-                                            <span className={`transaction-type-badge ${tx.type}`}>
+                                            <span className={`transaction-type-badge ${tx.type || 'unknown'}`}>
                                                 {tx.type === 'stock-in' && <TrendingUp size={14} />}
                                                 {tx.type === 'stock-out' && <TrendingDown size={14} />}
                                                 {tx.type === 'transfer' && '↔'}
-                                                {tx.type.replace('-', ' ').toUpperCase()}
+                                                {tx.type ? tx.type.replace('-', ' ').toUpperCase() : 'UNKNOWN'}
                                             </span>
                                         </td>
                                         <td><strong>{tx.quantity}</strong></td>
@@ -408,7 +410,7 @@ const ProductDetailsView = () => {
                     </table>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

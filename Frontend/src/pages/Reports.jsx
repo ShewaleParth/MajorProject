@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    FileText, Download, Calendar, Filter, TrendingUp, Package, 
+import {
+    FileText, Download, Calendar, Filter, TrendingUp, Package,
     Warehouse, DollarSign, BarChart3, PieChart, FileSpreadsheet,
     FileDown, Printer, Mail, Share2, Clock, CheckCircle, AlertCircle, Loader, RefreshCw
 } from 'lucide-react';
@@ -21,7 +21,7 @@ const Reports = () => {
     useEffect(() => {
         fetchData();
         fetchDepots();
-        
+
         // Poll for report updates every 10 seconds
         const interval = setInterval(fetchData, 10000);
         return () => clearInterval(interval);
@@ -46,7 +46,7 @@ const Reports = () => {
         try {
             const depotsData = await api.getDepots();
             console.log('🔍 Raw depots response:', depotsData);
-            
+
             if (Array.isArray(depotsData)) {
                 console.log('🔍 Setting depots from array:', depotsData);
                 setDepots(depotsData);
@@ -93,7 +93,7 @@ const Reports = () => {
             alert('✅ Report generation started! AI is analyzing your data. Check back in a few moments.');
             setShowGenerateModal(false);
             setSelectedDepot('');
-            
+
             // Refresh data after 2 seconds
             setTimeout(fetchData, 2000);
         } catch (error) {
@@ -161,7 +161,7 @@ const Reports = () => {
 
     const handleDeleteReport = async (reportId) => {
         if (!confirm('Are you sure you want to delete this report?')) return;
-        
+
         try {
             await api.deleteReport(reportId);
             alert('Report deleted successfully');
@@ -181,7 +181,7 @@ const Reports = () => {
             });
 
             alert('✅ Report generation started! AI is analyzing your data. Check back in a few moments.');
-            
+
             // Refresh data after 2 seconds
             setTimeout(fetchData, 2000);
         } catch (error) {
@@ -299,7 +299,7 @@ const Reports = () => {
                         <h3>🎯 Your Generated Reports</h3>
                         <span className="report-count">{generatedReports.length} reports</span>
                     </div>
-                    
+
                     <div className="reports-grid">
                         {generatedReports.map((report) => (
                             <div key={report._id} className="report-card">
@@ -336,28 +336,28 @@ const Reports = () => {
                                 <div className="report-actions">
                                     {report.status === 'completed' ? (
                                         <>
-                                            <button 
+                                            <button
                                                 className="action-btn primary"
                                                 onClick={() => handleDownloadReport(report._id, report.fileName)}
                                                 title="Download Report"
                                             >
                                                 <Download size={14} />
                                             </button>
-                                            <button 
+                                            <button
                                                 className="action-btn"
                                                 onClick={() => handlePrintReport(report._id)}
                                                 title="Print Report"
                                             >
                                                 <Printer size={14} />
                                             </button>
-                                            <button 
+                                            <button
                                                 className="action-btn"
                                                 onClick={() => handleEmailReport(report._id)}
                                                 title="Email Report"
                                             >
                                                 <Mail size={14} />
                                             </button>
-                                            <button 
+                                            <button
                                                 className="action-btn"
                                                 onClick={() => handleShareReport(report._id)}
                                                 title="Share Report"
@@ -371,7 +371,7 @@ const Reports = () => {
                                             Processing... {report.progress}%
                                         </button>
                                     ) : (
-                                        <button 
+                                        <button
                                             className="action-btn"
                                             onClick={() => handleDeleteReport(report._id)}
                                         >
@@ -402,19 +402,19 @@ const Reports = () => {
                 <div className="filter-group">
                     <label>Export Format</label>
                     <div className="format-buttons">
-                        <button 
+                        <button
                             className={`format-btn ${reportFormat === 'pdf' ? 'active' : ''}`}
                             onClick={() => setReportFormat('pdf')}
                         >
                             <FileText size={16} /> PDF
                         </button>
-                        <button 
+                        <button
                             className={`format-btn ${reportFormat === 'csv' ? 'active' : ''}`}
                             onClick={() => setReportFormat('csv')}
                         >
                             <FileSpreadsheet size={16} /> CSV
                         </button>
-                        <button 
+                        <button
                             className={`format-btn ${reportFormat === 'excel' ? 'active' : ''}`}
                             onClick={() => setReportFormat('excel')}
                         >
@@ -435,11 +435,11 @@ const Reports = () => {
                             <h3>{category.name}</h3>
                             <span className="report-count">{category.reports.length} reports</span>
                         </div>
-                        
+
                         <div className="reports-grid">
                             {category.reports.map((report) => (
-                                <div 
-                                    key={report.id} 
+                                <div
+                                    key={report.id}
                                     className="report-card"
                                     onClick={() => {
                                         if (report.needsDepot) {
@@ -464,7 +464,7 @@ const Reports = () => {
                                         </span>
                                     </div>
                                     <div className="report-actions">
-                                        <button 
+                                        <button
                                             className="action-btn primary"
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -512,11 +512,11 @@ const Reports = () => {
                         <p style={{ marginBottom: '20px', color: '#666' }}>
                             Select a depot to generate an intelligent analysis report with AI insights
                         </p>
-                        
+
                         <div className="form-group">
                             <label>Select Depot</label>
-                            <select 
-                                value={selectedDepot} 
+                            <select
+                                value={selectedDepot}
                                 onChange={(e) => {
                                     console.log('🔍 Depot selected:', e.target.value);
                                     setSelectedDepot(e.target.value);
@@ -545,33 +545,37 @@ const Reports = () => {
                         <div className="form-group">
                             <label>Report Format</label>
                             <div className="format-buttons">
-                                <button 
+                                <button
                                     className={`format-btn ${reportFormat === 'pdf' ? 'active' : ''}`}
                                     onClick={() => setReportFormat('pdf')}
                                 >
                                     <FileText size={16} /> PDF
                                 </button>
-                                <button 
+                                <button
                                     className={`format-btn ${reportFormat === 'csv' ? 'active' : ''}`}
                                     onClick={() => setReportFormat('csv')}
-                                    disabled
-                                    style={{ opacity: 0.5 }}
                                 >
-                                    <FileSpreadsheet size={16} /> CSV (Soon)
+                                    <FileSpreadsheet size={16} /> CSV
+                                </button>
+                                <button
+                                    className={`format-btn ${reportFormat === 'excel' ? 'active' : ''}`}
+                                    onClick={() => setReportFormat('excel')}
+                                >
+                                    <FileSpreadsheet size={16} /> Excel
                                 </button>
                             </div>
                         </div>
 
                         <div className="modal-actions">
-                            <button 
-                                className="cancel-btn" 
+                            <button
+                                className="cancel-btn"
                                 onClick={() => setShowGenerateModal(false)}
                                 disabled={generating}
                             >
                                 Cancel
                             </button>
-                            <button 
-                                className="add-items-btn" 
+                            <button
+                                className="add-items-btn"
                                 onClick={handleGenerateReport}
                                 disabled={generating || !selectedDepot}
                             >

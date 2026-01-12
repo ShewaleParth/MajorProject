@@ -18,6 +18,11 @@ const DepotDetails = ({ depotId, onBack }) => {
         setLoading(true);
         try {
             const response = await api.getDepotDetails(depotId);
+            console.log('🔍 Depot Details Response:', response);
+            console.log('📦 Depot Object:', response.depot);
+            console.log('📋 Inventory Array:', response.depot?.inventory);
+            console.log('🔄 Recent Transactions:', response.depot?.recentTransactions);
+
             setDepot(response.depot);
             setProducts(response.depot.inventory || []);
             setRecentMovements(response.depot.recentTransactions || []);
@@ -56,8 +61,13 @@ const DepotDetails = ({ depotId, onBack }) => {
 
     const filteredProducts = products.filter(p =>
         p.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.productSku?.toLowerCase().includes(searchTerm.toLowerCase())
+        p.productSku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    console.log('📊 Products State:', products);
+    console.log('🔍 Filtered Products:', filteredProducts);
+    console.log('📏 Products Length:', products.length);
 
     return (
         <div className="depot-details-container">
@@ -128,7 +138,7 @@ const DepotDetails = ({ depotId, onBack }) => {
                     <div className="depot-kpi-content">
                         <h4>Daily Movement</h4>
                         <div className="kpi-value">
-                            {recentMovements.filter(m => m.type === 'stock-in').length} in / 
+                            {recentMovements.filter(m => m.type === 'stock-in').length} in /
                             {recentMovements.filter(m => m.type === 'stock-out').length} out
                         </div>
                         <p className="kpi-trend neutral">Last 24 hours</p>
@@ -143,11 +153,11 @@ const DepotDetails = ({ depotId, onBack }) => {
                     <div className="health-score-circle">
                         <svg width="120" height="120" viewBox="0 0 120 120">
                             <circle cx="60" cy="60" r="54" fill="none" stroke="#e5e7eb" strokeWidth="8" />
-                            <circle 
-                                cx="60" 
-                                cy="60" 
-                                r="54" 
-                                fill="none" 
+                            <circle
+                                cx="60"
+                                cy="60"
+                                r="54"
+                                fill="none"
                                 stroke={utilizationPercent <= 60 ? '#10b981' : utilizationPercent <= 85 ? '#f59e0b' : '#ef4444'}
                                 strokeWidth="8"
                                 strokeDasharray={`${(utilizationPercent / 100) * 339.292} 339.292`}
@@ -264,11 +274,11 @@ const DepotDetails = ({ depotId, onBack }) => {
                             {filteredProducts.length > 0 ? (
                                 filteredProducts.map((item, idx) => {
                                     const itemValue = (item.quantity * (item.price || 100));
-                                    const daysInStock = item.lastUpdated 
+                                    const daysInStock = item.lastUpdated
                                         ? Math.floor((new Date() - new Date(item.lastUpdated)) / (1000 * 60 * 60 * 24))
                                         : 0;
                                     const status = item.quantity < 50 ? 'low' : item.quantity > 500 ? 'overstock' : 'optimal';
-                                    
+
                                     return (
                                         <tr key={idx}>
                                             <td><code>{item.sku}</code></td>

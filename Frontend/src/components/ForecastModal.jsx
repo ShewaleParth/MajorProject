@@ -27,7 +27,8 @@ const ForecastModal = ({ isOpen, onClose, product }) => {
             }
         } catch (err) {
             console.error('Error fetching forecast:', err);
-            setError('Error connecting to AI service');
+            const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Error connecting to AI service';
+            setError(errorMsg);
         } finally {
             setLoading(false);
         }

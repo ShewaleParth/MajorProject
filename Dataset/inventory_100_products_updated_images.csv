@@ -1,0 +1,101 @@
+sku,name,category,stock,price,supplier,reorderPoint,dailySales,weeklySales,brand,leadTime,depot,image,riskLevel,stockoutIn,reorderQty
+ELE-001,"Electronics Item 1",Electronics,12,102,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1526509867162-5b0c0d1b4b33?w=400&q=80,HIGH RISK,3,80
+APP-002,"Apparel Item 2",Apparel,150,453,"Curated Supplier",30,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80,SAFE,30,60
+ACC-003,"Accessories Item 3",Accessories,12,160,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,HIGH RISK,3,80
+SNE-004,"Sneakers Item 4",Sneakers,45,363,"Curated Supplier",40,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&q=80,MEDIUM,9,80
+ELE-005,"Electronics Item 5",Electronics,45,493,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1583394838336-acd97773cf1f?w=400&q=80,MEDIUM,9,80
+APP-006,"Apparel Item 6",Apparel,45,427,"Curated Supplier",40,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80,MEDIUM,9,80
+ACC-007,"Accessories Item 7",Accessories,150,194,"Curated Supplier",30,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,SAFE,30,60
+SNE-008,"Sneakers Item 8",Sneakers,150,456,"Curated Supplier",30,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80,SAFE,30,60
+ELE-009,"Electronics Item 9",Electronics,150,484,"Curated Supplier",30,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80,SAFE,30,60
+APP-010,"Apparel Item 10",Apparel,12,376,"Curated Supplier",40,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80,HIGH RISK,3,80
+ACC-011,"Accessories Item 11",Accessories,12,177,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,HIGH RISK,3,80
+SNE-012,"Sneakers Item 12",Sneakers,12,186,"Curated Supplier",40,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&q=80,HIGH RISK,3,80
+ELE-013,"Electronics Item 13",Electronics,12,53,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80,HIGH RISK,3,80
+APP-014,"Apparel Item 14",Apparel,45,51,"Curated Supplier",40,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80,MEDIUM,9,80
+ACC-015,"Accessories Item 15",Accessories,12,101,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,HIGH RISK,3,80
+SNE-016,"Sneakers Item 16",Sneakers,150,100,"Curated Supplier",30,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80,SAFE,30,60
+ELE-017,"Electronics Item 17",Electronics,45,183,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80,MEDIUM,9,80
+APP-018,"Apparel Item 18",Apparel,150,395,"Curated Supplier",30,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80,SAFE,30,60
+ACC-019,"Accessories Item 19",Accessories,12,287,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,HIGH RISK,3,80
+SNE-020,"Sneakers Item 20",Sneakers,150,365,"Curated Supplier",30,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&q=80,SAFE,30,60
+ELE-021,"Electronics Item 21",Electronics,150,74,"Curated Supplier",30,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=400&q=80,SAFE,30,60
+APP-022,"Apparel Item 22",Apparel,150,427,"Curated Supplier",30,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80,SAFE,30,60
+ACC-023,"Accessories Item 23",Accessories,45,451,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,MEDIUM,9,80
+SNE-024,"Sneakers Item 24",Sneakers,150,517,"Curated Supplier",30,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80,SAFE,30,60
+ELE-025,"Electronics Item 25",Electronics,45,438,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&q=80,MEDIUM,9,80
+APP-026,"Apparel Item 26",Apparel,45,380,"Curated Supplier",40,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80,MEDIUM,9,80
+ACC-027,"Accessories Item 27",Accessories,150,281,"Curated Supplier",30,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,SAFE,30,60
+SNE-028,"Sneakers Item 28",Sneakers,45,119,"Curated Supplier",40,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&q=80,MEDIUM,9,80
+ELE-029,"Electronics Item 29",Electronics,150,540,"Curated Supplier",30,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1526509867162-5b0c0d1b4b33?w=400&q=80,SAFE,30,60
+APP-030,"Apparel Item 30",Apparel,12,384,"Curated Supplier",40,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80,HIGH RISK,3,80
+ACC-031,"Accessories Item 31",Accessories,12,368,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,HIGH RISK,3,80
+SNE-032,"Sneakers Item 32",Sneakers,150,491,"Curated Supplier",30,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80,SAFE,30,60
+ELE-033,"Electronics Item 33",Electronics,150,80,"Curated Supplier",30,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1583394838336-acd97773cf1f?w=400&q=80,SAFE,30,60
+APP-034,"Apparel Item 34",Apparel,45,208,"Curated Supplier",40,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80,MEDIUM,9,80
+ACC-035,"Accessories Item 35",Accessories,150,204,"Curated Supplier",30,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,SAFE,30,60
+SNE-036,"Sneakers Item 36",Sneakers,150,429,"Curated Supplier",30,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&q=80,SAFE,30,60
+ELE-037,"Electronics Item 37",Electronics,150,393,"Curated Supplier",30,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80,SAFE,30,60
+APP-038,"Apparel Item 38",Apparel,12,140,"Curated Supplier",40,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80,HIGH RISK,3,80
+ACC-039,"Accessories Item 39",Accessories,45,255,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,MEDIUM,9,80
+SNE-040,"Sneakers Item 40",Sneakers,150,319,"Curated Supplier",30,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80,SAFE,30,60
+ELE-041,"Electronics Item 41",Electronics,150,86,"Curated Supplier",30,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80,SAFE,30,60
+APP-042,"Apparel Item 42",Apparel,150,314,"Curated Supplier",30,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80,SAFE,30,60
+ACC-043,"Accessories Item 43",Accessories,150,178,"Curated Supplier",30,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,SAFE,30,60
+SNE-044,"Sneakers Item 44",Sneakers,150,331,"Curated Supplier",30,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&q=80,SAFE,30,60
+ELE-045,"Electronics Item 45",Electronics,150,236,"Curated Supplier",30,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80,SAFE,30,60
+APP-046,"Apparel Item 46",Apparel,150,420,"Curated Supplier",30,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80,SAFE,30,60
+ACC-047,"Accessories Item 47",Accessories,150,451,"Curated Supplier",30,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,SAFE,30,60
+SNE-048,"Sneakers Item 48",Sneakers,150,58,"Curated Supplier",30,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80,SAFE,30,60
+ELE-049,"Electronics Item 49",Electronics,45,311,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=400&q=80,MEDIUM,9,80
+APP-050,"Apparel Item 50",Apparel,45,132,"Curated Supplier",40,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80,MEDIUM,9,80
+ACC-051,"Accessories Item 51",Accessories,45,341,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,MEDIUM,9,80
+SNE-052,"Sneakers Item 52",Sneakers,150,107,"Curated Supplier",30,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&q=80,SAFE,30,60
+ELE-053,"Electronics Item 53",Electronics,12,216,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&q=80,HIGH RISK,3,80
+APP-054,"Apparel Item 54",Apparel,150,524,"Curated Supplier",30,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80,SAFE,30,60
+ACC-055,"Accessories Item 55",Accessories,45,513,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,MEDIUM,9,80
+SNE-056,"Sneakers Item 56",Sneakers,45,89,"Curated Supplier",40,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80,MEDIUM,9,80
+ELE-057,"Electronics Item 57",Electronics,150,325,"Curated Supplier",30,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1526509867162-5b0c0d1b4b33?w=400&q=80,SAFE,30,60
+APP-058,"Apparel Item 58",Apparel,45,207,"Curated Supplier",40,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80,MEDIUM,9,80
+ACC-059,"Accessories Item 59",Accessories,150,341,"Curated Supplier",30,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,SAFE,30,60
+SNE-060,"Sneakers Item 60",Sneakers,45,176,"Curated Supplier",40,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&q=80,MEDIUM,9,80
+ELE-061,"Electronics Item 61",Electronics,45,239,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1583394838336-acd97773cf1f?w=400&q=80,MEDIUM,9,80
+APP-062,"Apparel Item 62",Apparel,45,296,"Curated Supplier",40,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80,MEDIUM,9,80
+ACC-063,"Accessories Item 63",Accessories,12,387,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,HIGH RISK,3,80
+SNE-064,"Sneakers Item 64",Sneakers,45,175,"Curated Supplier",40,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80,MEDIUM,9,80
+ELE-065,"Electronics Item 65",Electronics,45,310,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80,MEDIUM,9,80
+APP-066,"Apparel Item 66",Apparel,150,356,"Curated Supplier",30,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80,SAFE,30,60
+ACC-067,"Accessories Item 67",Accessories,150,218,"Curated Supplier",30,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,SAFE,30,60
+SNE-068,"Sneakers Item 68",Sneakers,12,296,"Curated Supplier",40,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&q=80,HIGH RISK,3,80
+ELE-069,"Electronics Item 69",Electronics,150,129,"Curated Supplier",30,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80,SAFE,30,60
+APP-070,"Apparel Item 70",Apparel,12,444,"Curated Supplier",40,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80,HIGH RISK,3,80
+ACC-071,"Accessories Item 71",Accessories,150,301,"Curated Supplier",30,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,SAFE,30,60
+SNE-072,"Sneakers Item 72",Sneakers,12,156,"Curated Supplier",40,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80,HIGH RISK,3,80
+ELE-073,"Electronics Item 73",Electronics,45,435,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80,MEDIUM,9,80
+APP-074,"Apparel Item 74",Apparel,150,440,"Curated Supplier",30,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80,SAFE,30,60
+ACC-075,"Accessories Item 75",Accessories,12,354,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,HIGH RISK,3,80
+SNE-076,"Sneakers Item 76",Sneakers,150,242,"Curated Supplier",30,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&q=80,SAFE,30,60
+ELE-077,"Electronics Item 77",Electronics,12,502,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=400&q=80,HIGH RISK,3,80
+APP-078,"Apparel Item 78",Apparel,12,221,"Curated Supplier",40,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80,HIGH RISK,3,80
+ACC-079,"Accessories Item 79",Accessories,12,275,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,HIGH RISK,3,80
+SNE-080,"Sneakers Item 80",Sneakers,12,117,"Curated Supplier",40,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80,HIGH RISK,3,80
+ELE-081,"Electronics Item 81",Electronics,12,419,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&q=80,HIGH RISK,3,80
+APP-082,"Apparel Item 82",Apparel,12,471,"Curated Supplier",40,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80,HIGH RISK,3,80
+ACC-083,"Accessories Item 83",Accessories,150,533,"Curated Supplier",30,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,SAFE,30,60
+SNE-084,"Sneakers Item 84",Sneakers,12,441,"Curated Supplier",40,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&q=80,HIGH RISK,3,80
+ELE-085,"Electronics Item 85",Electronics,45,140,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1526509867162-5b0c0d1b4b33?w=400&q=80,MEDIUM,9,80
+APP-086,"Apparel Item 86",Apparel,150,391,"Curated Supplier",30,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80,SAFE,30,60
+ACC-087,"Accessories Item 87",Accessories,12,156,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,HIGH RISK,3,80
+SNE-088,"Sneakers Item 88",Sneakers,150,283,"Curated Supplier",30,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80,SAFE,30,60
+ELE-089,"Electronics Item 89",Electronics,45,535,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1583394838336-acd97773cf1f?w=400&q=80,MEDIUM,9,80
+APP-090,"Apparel Item 90",Apparel,150,440,"Curated Supplier",30,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80,SAFE,30,60
+ACC-091,"Accessories Item 91",Accessories,45,364,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,MEDIUM,9,80
+SNE-092,"Sneakers Item 92",Sneakers,150,530,"Curated Supplier",30,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&q=80,SAFE,30,60
+ELE-093,"Electronics Item 93",Electronics,45,57,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80,MEDIUM,9,80
+APP-094,"Apparel Item 94",Apparel,150,479,"Curated Supplier",30,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&q=80,SAFE,30,60
+ACC-095,"Accessories Item 95",Accessories,12,435,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,HIGH RISK,3,80
+SNE-096,"Sneakers Item 96",Sneakers,45,206,"Curated Supplier",40,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80,MEDIUM,9,80
+ELE-097,"Electronics Item 97",Electronics,45,432,"Curated Supplier",40,5,35,"Premium Brand",7,"Animesh's Depot",https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80,MEDIUM,9,80
+APP-098,"Apparel Item 98",Apparel,45,457,"Curated Supplier",40,5,35,"Premium Brand",7,"Aayush's Depot",https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80,MEDIUM,9,80
+ACC-099,"Accessories Item 99",Accessories,45,540,"Curated Supplier",40,5,35,"Premium Brand",7,"Abhay's Depot",https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&q=80,MEDIUM,9,80
+SNE-100,"Sneakers Item 100",Sneakers,150,450,"Curated Supplier",30,5,35,"Premium Brand",7,"Parth's Depot",https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400&q=80,SAFE,30,60

@@ -22,6 +22,7 @@ function App() {
   const [theme, setTheme] = useState('light');
   const [activeItem, setActiveItem] = useState('Dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -35,6 +36,10 @@ function App() {
 
   const closeSidebar = () => {
     setIsSidebarOpen(false);
+  };
+
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
   // Close sidebar when window is resized to desktop
@@ -57,7 +62,7 @@ function App() {
         return <InventoryOverview />;
       case 'Depots':
         return <Depots />;
-      case 'Forecasting Analysis':
+      case 'Supplier Risk Radar':
         return <ForecastingAnalysis />;
       case 'Reports Export':
         return <Reports />;
@@ -92,22 +97,24 @@ function App() {
               <ProtectedRoute>
                 <div className="app-container">
                   {/* Sidebar Overlay for Mobile */}
-                  <div 
+                  <div
                     className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`}
                     onClick={closeSidebar}
                   />
-                  
-                  <Sidebar 
-                    activeItem={activeItem} 
+
+                  <Sidebar
+                    activeItem={activeItem}
                     setActiveItem={setActiveItem}
                     isMobileOpen={isSidebarOpen}
+                    isCollapsed={isSidebarCollapsed}
                     onClose={closeSidebar}
+                    onToggleCollapse={toggleSidebarCollapse}
                   />
-                  
-                  <div className="main-layout">
-                    <Header 
-                      theme={theme} 
-                      toggleTheme={toggleTheme} 
+
+                  <div className={`main-layout ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+                    <Header
+                      theme={theme}
+                      toggleTheme={toggleTheme}
                       title={activeItem}
                       onMenuClick={toggleSidebar}
                     />

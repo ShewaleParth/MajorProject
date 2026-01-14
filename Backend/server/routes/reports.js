@@ -1,11 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const Report = require('../models/Report');
-const Depot = require('../models/Depot');
-const Product = require('../models/Product');
-const Transaction = require('../models/Transaction');
+const mongoose = require('mongoose');
+const Report = mongoose.model('Report');
+const Depot = mongoose.model('Depot');
+const Product = mongoose.model('Product');
+const Transaction = mongoose.model('Transaction');
 const aiReportService = require('../services/aiReportService');
 const pdfGenerator = require('../services/pdfGenerator');
+const dataExporter = require('../services/dataExporter');
 const { cache } = require('../config/redis');
 const authenticateToken = require('../middleware/auth');
 const path = require('path');
@@ -34,7 +36,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
   try {
     const cacheKey = `report-stats:${req.userId}`;
     const cached = await cache.get(cacheKey);
-    
+
     if (cached) {
       return res.json(cached);
     }
@@ -71,15 +73,15 @@ router.get('/stats', authenticateToken, async (req, res) => {
 router.get('/list', authenticateToken, async (req, res) => {
   try {
     const { category, status } = req.query;
-    
+
     const query = { userId: req.userId };
     if (status) query.status = status;
-    
+
     const reports = await Report.find(query)
       .sort({ createdAt: -1 })
       .limit(50)
       .select('-data.raw');
-    
+
     res.json(reports);
   } catch (error) {
     console.error('Error fetching reports:', error);
@@ -102,14 +104,14 @@ router.post('/generate', authenticateToken, async (req, res) => {
     const config = REPORT_CONFIG[reportType];
     let targetName = 'System Wide';
     let targetModel = 'User';
-    
+
     // If depot-specific report, validate depot
     if (config.needsDepot && targetId) {
       // Validate that targetId is a valid MongoDB ObjectId
       const mongoose = require('mongoose');
       if (!mongoose.Types.ObjectId.isValid(targetId)) {
-        return res.status(400).json({ 
-          error: 'Invalid depot ID format. Please select a valid depot from the dropdown.' 
+        return res.status(400).json({
+          error: 'Invalid depot ID format. Please select a valid depot from the dropdown.'
         });
       }
 
@@ -139,7 +141,7 @@ router.post('/generate', authenticateToken, async (req, res) => {
     });
 
     // Process report asynchronously
-    processReportSync(report._id.toString(), req.userId, reportType, targetId, config).catch(err => {
+    processReportSync(report._id.toString(), req.userId, reportType, targetId, config, format).catch(err => {
       console.error('Background report processing error:', err);
     });
 
@@ -159,7 +161,7 @@ router.post('/generate', authenticateToken, async (req, res) => {
 /**
  * Universal report processor
  */
-async function processReportSync(reportId, userId, reportType, targetId, config) {
+async function processReportSync(reportId, userId, reportType, targetId, config, format = 'pdf') {
   try {
     console.log(`📊 Processing ${reportType} report: ${reportId}`);
 
@@ -182,15 +184,31 @@ async function processReportSync(reportId, userId, reportType, targetId, config)
 
     console.log(`🤖 Generating AI analysis for ${reportType}...`);
 
+    // Data for export mapping
+    let dataToExport = products;
+
     // Call appropriate AI analysis method
     let aiAnalysis;
     switch (reportType) {
       case 'depot-analysis':
-        const depotProducts = products.filter(p => p.depotId?.toString() === targetId);
-        const depotTrans = transactions.filter(t => 
-          t.fromDepot?.toString() === targetId || t.toDepot?.toString() === targetId
+        const filteredProducts = products.filter(p =>
+          p.depotId?.toString() === targetId ||
+          p.depotDistribution?.some(d => d.depotId?.toString() === targetId)
+        ).map(p => {
+          if (p.depotDistribution && p.depotDistribution.length > 0) {
+            const dist = p.depotDistribution.find(d => d.depotId?.toString() === targetId);
+            if (dist) return { ...p, stock: dist.quantity };
+          }
+          return p;
+        });
+        const depotTrans = transactions.filter(t =>
+          t.fromDepotId?.toString() === targetId ||
+          t.toDepotId?.toString() === targetId ||
+          t.fromDepot === targetId ||
+          t.toDepot === targetId
         );
-        aiAnalysis = await aiReportService.analyzeDepotData(depotData, depotTrans, depotProducts);
+        dataToExport = filteredProducts;
+        aiAnalysis = await aiReportService.analyzeDepotData(depotData, depotTrans, filteredProducts);
         break;
       case 'inventory-summary':
         aiAnalysis = await aiReportService.analyzeInventorySummary(products, depots, transactions);
@@ -235,38 +253,46 @@ async function processReportSync(reportId, userId, reportType, targetId, config)
 
     await Report.findByIdAndUpdate(reportId, { progress: 70 });
 
-    console.log(`📄 Generating PDF for ${reportType}...`);
+    console.log(`📄 Generating ${format.toUpperCase()} for ${reportType}...`);
 
-    // Generate PDF using universal method or specific method
-    const pdfResult = await pdfGenerator.generateUniversalReport(
-      reportType,
-      { products, depots, transactions, depotData, targetId },
-      aiAnalysis
-    );
+    // Generate output based on format
+    let result;
+    if (format === 'csv') {
+      result = await dataExporter.exportToCSV(reportType, { products: dataToExport });
+    } else if (format === 'excel') {
+      result = await dataExporter.exportToExcel(reportType, { products: dataToExport });
+    } else {
+      // Default to PDF
+      result = await pdfGenerator.generateUniversalReport(
+        reportType,
+        { products, depots, transactions, depotData, targetId },
+        aiAnalysis
+      );
+    }
 
     // Ensure all AI response fields are properly formatted as strings
     // Groq sometimes returns objects instead of strings
-    
-    const executive = typeof aiAnalysis.executiveSummary === 'string' 
-      ? aiAnalysis.executiveSummary 
+
+    const executive = typeof aiAnalysis.executiveSummary === 'string'
+      ? aiAnalysis.executiveSummary
       : (aiAnalysis.executiveSummary?.summary || JSON.stringify(aiAnalysis.executiveSummary || 'Analysis completed'));
 
     const keyInsights = Array.isArray(aiAnalysis.keyInsights)
-      ? aiAnalysis.keyInsights.map(insight => 
-          typeof insight === 'string' ? insight : (insight.insight || insight.text || JSON.stringify(insight))
-        )
+      ? aiAnalysis.keyInsights.map(insight =>
+        typeof insight === 'string' ? insight : (insight.insight || insight.text || JSON.stringify(insight))
+      )
       : [];
 
     const recommendations = Array.isArray(aiAnalysis.recommendations)
-      ? aiAnalysis.recommendations.map(rec => 
-          typeof rec === 'string' ? rec : (rec.recommendation || rec.text || JSON.stringify(rec))
-        )
+      ? aiAnalysis.recommendations.map(rec =>
+        typeof rec === 'string' ? rec : (rec.recommendation || rec.text || JSON.stringify(rec))
+      )
       : [];
 
-    const alerts = Array.isArray(aiAnalysis.alerts) 
-      ? aiAnalysis.alerts.map(alert => 
-          typeof alert === 'string' ? alert : (alert.alert || alert.message || JSON.stringify(alert))
-        )
+    const alerts = Array.isArray(aiAnalysis.alerts)
+      ? aiAnalysis.alerts.map(alert =>
+        typeof alert === 'string' ? alert : (alert.alert || alert.message || JSON.stringify(alert))
+      )
       : [];
 
     // Update report with results
@@ -279,9 +305,9 @@ async function processReportSync(reportId, userId, reportType, targetId, config)
         alerts: alerts,
         metrics: aiAnalysis.metrics || {}
       },
-      fileUrl: pdfResult.filepath,
-      fileName: pdfResult.filename,
-      fileSize: pdfResult.fileSize,
+      fileUrl: result.filepath,
+      fileName: result.filename,
+      fileSize: result.fileSize,
       generatedAt: new Date(),
       progress: 100
     });
@@ -341,8 +367,8 @@ router.get('/:reportId/download', authenticateToken, async (req, res) => {
     }
 
     if (report.status !== 'completed') {
-      return res.status(400).json({ 
-        error: 'Report not ready', 
+      return res.status(400).json({
+        error: 'Report not ready',
         status: report.status,
         progress: report.progress
       });

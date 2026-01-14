@@ -1,0 +1,7 @@
+--------------------------------------------------
+Supplier: Alpha Parts          | Score:  83.89 | Level: High
+Supplier: Nova Logistics       | Score:  77.88 | Level: High
+Supplier: Omega Industries     | Score:  79.06 | Level: High
+Supplier: Apex Logistics       | Score:   1.12 | Level: Low
+Supplier: Prime Suppliers      | Score:   6.73 | Level: Low
+--------------------------------------------------

@@ -28,6 +28,7 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 
   --sidebar-width: 260px;
+  --sidebar-collapsed-width: 80px;
   --header-height: 72px;
 
   --font-main: 'Inter', sans-serif;
@@ -170,7 +171,7 @@ input {
   display: flex;
   flex-direction: column;
   background-color: var(--bg-main);
-  transition: background-color 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 0;
   /* Prevent layout breaking */
 }
@@ -191,7 +192,33 @@ input {
   height: 100vh;
   position: sticky;
   top: 0;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+.sidebar.collapsed .sidebar-header {
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  padding: 20px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar.collapsed .user-profile-sm {
+  padding: 0;
+  border: none;
+  background: none;
 }
 
 .sidebar-header {
@@ -234,9 +261,21 @@ input {
 
 .collapse-btn {
   color: var(--text-muted);
-  padding: 4px;
+  padding: 6px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.collapse-btn:hover {
+  background: var(--primary-glow);
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
 .sidebar-nav {

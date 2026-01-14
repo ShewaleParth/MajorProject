@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Package, TrendingUp, TrendingDown, ArrowRightLeft, AlertCircle } from 'lucide-react';
 import { api } from '../utils/api';
+import { riskApi } from './SupplierRiskRadar/riskApi';
 import '../styles/TransactionModal.css';
 
 const AddTransactionModal = ({ isOpen, onClose, product, depots, onSuccess }) => {
@@ -16,6 +17,7 @@ const AddTransactionModal = ({ isOpen, onClose, product, depots, onSuccess }) =>
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [preview, setPreview] = useState(null);
+    const [riskWarning, setRiskWarning] = useState(null);
 
     useEffect(() => {
         if (isOpen && depots.length > 0 && !formData.depotId) {
@@ -79,6 +81,28 @@ const AddTransactionModal = ({ isOpen, onClose, product, depots, onSuccess }) =>
         setError(null);
 
         try {
+            // PHASE 7: Real-Time Supplier Risk Prediction
+            if (activeTab === 'stock-in' && formData.reason === 'Purchase Order' && product.supplier) {
+                try {
+                    const riskResult = await riskApi.predictRisk({
+                        supplier: product.supplier,
+                        category: product.category,
+                        qty: parseInt(formData.quantity),
+                        price: product.price || 50
+                    });
+
+                    if (riskResult.success && riskResult.result.risk_score > 70) {
+                        setRiskWarning({
+                            score: riskResult.result.risk_score,
+                            supplier: product.supplier
+                        });
+                        // Don't block submission, just warn
+                    }
+                } catch (riskErr) {
+                    console.warn("Supplier risk prediction failed, continuing with submission...", riskErr);
+                }
+            }
+
             let response;
             const data = {
                 productId: product.id || product._id,
@@ -142,6 +166,19 @@ const AddTransactionModal = ({ isOpen, onClose, product, depots, onSuccess }) =>
                     </div>
                     <button onClick={onClose} className="close-btn"><X size={24} /></button>
                 </div>
+
+                {riskWarning && (
+                    <div className="risk-warning-banner" style={{ background: '#fee2e2', border: '1.5px solid #ef4444', padding: '12px 20px', margin: '0 20px 20px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <AlertCircle className="text-danger" size={24} />
+                        <div style={{ flex: 1 }}>
+                            <strong style={{ color: '#ef4444', fontSize: '13px', display: 'block' }}>High Risk Supplier Detected</strong>
+                            <span style={{ fontSize: '12px', color: '#7f1d1d' }}>
+                                {riskWarning.score}% probability of delivery delay. Suggested backup: Beta Corp.
+                            </span>
+                        </div>
+                        <button className="close-btn" onClick={() => setRiskWarning(null)}><X size={16} /></button>
+                    </div>
+                )}
 
                 <div className="transaction-tabs">
                     <button

@@ -6,34 +6,19 @@ const Transaction = require('../models/Transaction');
 const Alert = require('../models/Alert');
 const Forecast = require('../models/Forecast');
 
-// GET dashboard stats - formatted for frontend with enhanced KPIs
-router.get('/stats', async (req, res, next) =>{
+// GET dashboard stats - formatted for frontend
+router.get('/stats', async (req, res, next) => {
   try {
     const userId = req.userId;
-    const mongoose = require('mongoose');
 
-    console.log(`[DASHBOARD] User: ${userId} | DB: ${mongoose.connection.name}`);
+    const totalProducts = await Product.countDocuments({ userId });
+    const lowStockProducts = await Product.countDocuments({ userId, status: 'low-stock' });
+    const outOfStockProducts = await Product.countDocuments({ userId, status: 'out-of-stock' });
+    const activeAlerts = await Alert.countDocuments({ userId, isResolved: false });
 
-    // Fetch all counts in parallel for performance
-    const [totalProducts, lowStockCount, outOfStockCount, totalDepots] = await Promise.all([
-      Product.countDocuments({ userId }),
-      Product.countDocuments({ userId, status: 'low-stock' }),
-      Product.countDocuments({ userId, status: 'out-of-stock' }),
-      Depot.countDocuments({ userId })
-    ]);
-
-    console.log(`[DASHBOARD] Found: ${totalProducts} products, ${lowStockCount} low stock`);
-
-    // Calculate inventory value from all products
-    const userProducts = await Product.find({ userId }).select('price stock _id');
-    const totalValue = userProducts.reduce((sum, p) => sum + ((p.price || 0) * (p.stock || 0)), 0);
-
-    // Get alerts status
-    const productIds = userProducts.map(p => p._id);
-    const unreadAlerts = await Alert.countDocuments({
-      isRead: false,
-      productId: { $in: productIds }
-    }).catch(() => 0);
+    // Calculate inventory value
+    const products = await Product.find({ userId });
+    const inventoryValue = products.reduce((sum, p) => sum + (p.stock * p.price), 0);
 
     // Calculate depot utilization
     const depots = await Depot.find({ userId });
@@ -42,48 +27,39 @@ router.get('/stats', async (req, res, next) =>{
     const utilizationPercent = totalCapacity > 0 ? ((totalUtilization / totalCapacity) * 100).toFixed(1) : 0;
 
     // Format as KPIs for frontend
-    const kpis = [
-      {
-        title: 'Total Products',
-        value: totalProducts.toString(),
-        change: 0,
-        changeType: 'neutral',
-        icon: 'Package'
-      },
-      {
-        title: 'Inventory Value',
-        value: `₹${(totalValue / 100000).toFixed(1)}L`,
-        change: 0,
-        changeType: 'neutral',
-        icon: 'IndianRupee'
-      },
-      {
-        title: 'Depot Utilization',
-        value: `${utilizationPercent}%`,
-        change: 0,
-        changeType: 'neutral',
-        icon: 'Warehouse'
-      },
-      {
-        title: 'Active Alerts',
-        value: unreadAlerts,
-        change: 0,
-        changeType: unreadAlerts > 0 ? 'negative' : 'positive',
-        icon: 'AlertTriangle'
-      }
-    ];
-
     res.json({
-      kpis,
-      stats: {
-        totalProducts,
-        lowStockCount,
-        outOfStockCount,
-        totalDepots,
-        unreadAlerts,
-        totalValue,
-        depotUtilization: utilizationPercent
-      }
+      kpis: [
+        {
+          title: 'Total Products',
+          value: totalProducts,
+          change: 0,
+          changeType: 'neutral'
+        },
+        {
+          title: 'Inventory Value',
+          value: `₹${inventoryValue.toLocaleString('en-IN')}`,
+          change: 0,
+          changeType: 'neutral'
+        },
+        {
+          title: 'Depot Utilization',
+          value: `${utilizationPercent}%`,
+          change: 0,
+          changeType: 'neutral'
+        },
+        {
+          title: 'Active Alerts',
+          value: activeAlerts,
+          change: 0,
+          changeType: activeAlerts > 0 ? 'negative' : 'positive'
+        }
+      ],
+      totalProducts,
+      lowStockProducts,
+      outOfStockProducts,
+      activeAlerts,
+      inventoryValue,
+      depotUtilization: utilizationPercent
     });
   } catch (error) {
     next(error);
@@ -114,61 +90,39 @@ router.get('/top-skus', async (req, res, next) => {
   }
 });
 
-// GET sales trend - formatted for frontend with depot filtering
+// GET sales trend - formatted for frontend
 router.get('/sales-trend', async (req, res, next) => {
   try {
     const userId = req.userId;
-    const { depotId, days = 7 } = req.query;
+    const { days = 7 } = req.query;
 
-    const trendData = [];
-    const today = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - parseInt(days));
 
-    // Fetch products to use their metadata (dailySales, price) for realistic predictions
-    const products = await Product.find({ userId });
-    const totalDailyDemand = products.reduce((sum, p) => sum + (parseFloat(p.dailySales) || 0), 0);
-    const avgPrice = products.length > 0
-      ? products.reduce((sum, p) => sum + (p.price || 500), 0) / products.length
-      : 500;
+    const transactions = await Transaction.find({
+      userId,
+      timestamp: { $gte: startDate },
+      transactionType: 'stock-out'
+    }).sort({ timestamp: 1 });
 
-    // Generate data for the last N days
-    for (let i = parseInt(days) - 1; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      const query = {
-        userId,
-        transactionType: 'stock-out',
-        timestamp: { $gte: startOfDay, $lte: endOfDay }
-      };
-
-      if (depotId && depotId !== 'all') {
-        query.fromDepotId = depotId;
+    // Group by date
+    const trendMap = {};
+    transactions.forEach(tx => {
+      const date = new Date(tx.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (!trendMap[date]) {
+        trendMap[date] = { sales: 0, predicted: 0 };
       }
+      trendMap[date].sales += tx.quantity;
+      trendMap[date].predicted += tx.quantity * 1.1; // Mock prediction
+    });
 
-      const transactions = await Transaction.find(query);
+    const trendData = Object.keys(trendMap).map(date => ({
+      date,
+      sales: trendMap[date].sales,
+      predicted: Math.round(trendMap[date].predicted)
+    }));
 
-      // Calculate total revenue from sales today
-      const actualSalesCount = transactions.reduce((sum, t) => sum + (t.quantity || 0), 0);
-      const actualRevenue = actualSalesCount * avgPrice;
-
-      // Calculate realistic prediction based on product demands
-      const dayFactor = 0.9 + Math.random() * 0.2;
-      const predictedRevenue = (totalDailyDemand * avgPrice) * dayFactor;
-
-      trendData.push({
-        date: dateStr,
-        sales: Math.round(actualRevenue),
-        predicted: Math.round(predictedRevenue)
-      });
-    }
-
-    res.json({ trendData });
+    res.json({ trendData, transactions });
   } catch (error) {
     next(error);
   }

@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 const MONGODB_URI = process.env.MONGODB_URI;
-const CSV_PATH = path.join('d:', 'Major', 'Dataset', 'inventory_100_products_updated_images.csv');
+const CSV_PATH = path.join('d:', 'Major', 'Dataset', 'Item List.csv');
 
 async function purgeAndReload() {
     try {

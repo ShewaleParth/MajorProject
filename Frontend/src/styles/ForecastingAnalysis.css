@@ -265,17 +265,17 @@
 }
 
 .risk-badge.high {
-    background: #fee2e2;
+    background: rgba(239, 68, 68, 0.1);
     color: #991b1b;
 }
 
 .risk-badge.medium {
-    background: #fef9c3;
+    background: rgba(245, 158, 11, 0.1);
     color: #854d0e;
 }
 
 .risk-badge.safe {
-    background: #dcfce7;
+    background: rgba(16, 185, 129, 0.1);
     color: #166534;
 }
 
@@ -469,4 +469,20 @@
 .close-modal-btn:hover {
     background: var(--bg-main);
     color: var(--danger);
+}
+
+/* Dark Mode */
+[data-theme='dark'] .risk-badge.high {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+[data-theme='dark'] .risk-badge.medium {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
+[data-theme='dark'] .risk-badge.safe {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
 }

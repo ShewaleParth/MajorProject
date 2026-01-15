@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://luckyak619_db_user:luckyak619@cluster0.lcmjwhw.mongodb.net/sangrahak?retryWrites=true&w=majority&appName=Cluster0';
-const CSV_PATH = path.join('d:', 'Major', 'Dataset', 'inventory_100_products_updated_images.csv');
+const CSV_PATH = path.join('d:', 'Major', 'Dataset', 'Item List.csv');
 
 async function updateDB() {
     try {

@@ -6,7 +6,6 @@
     --risk-medium: #eab308;
     --risk-low: #10b981;
     --risk-safe: #3b82f6;
-    --bg-surface: #f8fafc;
 }
 
 .supplier-command-center {
@@ -14,7 +13,7 @@
     flex-direction: column;
     gap: 24px;
     padding: 20px;
-    background: var(--bg-surface);
+    background: var(--bg-main);
     min-height: 100vh;
 }
 
@@ -23,7 +22,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: white;
+    background: var(--bg-card);
     padding: 24px;
     border-radius: 16px;
     border: 1px solid var(--border);
@@ -75,7 +74,7 @@
 }
 
 .kpi-card-v2 {
-    background: white;
+    background: var(--bg-card);
     padding: 24px;
     border-radius: 16px;
     border: 1px solid var(--border);
@@ -109,7 +108,7 @@
 }
 
 .table-panel {
-    background: white;
+    background: var(--bg-card);
     border-radius: 16px;
     border: 1px solid var(--border);
     box-shadow: var(--shadow-sm);
@@ -204,7 +203,7 @@
 }
 
 .radar-table-v2 tr:hover {
-    background: #f8fafc;
+    background: var(--bg-main);
 }
 
 .risk-score-badge {
@@ -240,7 +239,7 @@
     width: 900px;
     max-width: 95vw;
     max-height: 90vh;
-    background: white;
+    background: var(--bg-card);
     border-radius: 24px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     display: flex;
@@ -282,7 +281,7 @@
 }
 
 .alert-item {
-    background: white;
+    background: var(--bg-card);
     padding: 16px;
     border-radius: 12px;
     border: 1px solid var(--border);
@@ -342,7 +341,7 @@
 }
 
 .drawer-insight-section {
-    background: #f1f5f9;
+    background: var(--bg-main);
     padding: 24px;
     border-radius: 16px;
     display: flex;
@@ -351,7 +350,7 @@
 }
 
 .ai-reason-bubble {
-    background: white;
+    background: var(--bg-card);
     padding: 16px;
     border-radius: 12px;
     border-left: 4px solid var(--primary);
@@ -396,29 +395,29 @@
 }
 
 .drilldown-modal {
-    background: #ffffff !important;
+    background: var(--bg-card) !important;
     border-radius: 20px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     /* Stronger shadow */
     overflow: hidden;
     position: relative;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border);
     color: var(--text-main);
 }
 
 .intel-modal-header {
     padding: 24px;
-    background: #f8fafc;
+    background: var(--bg-main);
     border-bottom: 1px solid var(--border);
 }
 
 .intel-modal-body {
-    background: #ffffff !important;
+    background: var(--bg-card) !important;
     padding: 24px;
 }
 
 .task-item {
-    background: #f1f5f9;
+    background: var(--bg-main);
     border-radius: 12px;
     border: 1px solid var(--border);
     transition: all 0.2s ease;
@@ -426,7 +425,7 @@
 
 .task-item:hover {
     border-color: var(--primary);
-    background: white;
+    background: var(--bg-card);
     transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
 }

@@ -12,20 +12,21 @@ import {
   Settings,
   MessageSquare,
   ChevronLeft,
+  ChevronRight,
   Warehouse,
   X
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
 
-const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, onClose }) => {
+const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, isCollapsed, onClose, onToggleCollapse }) => {
   const { user } = useAuth();
 
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', live: true },
     { icon: Package, label: 'Inventory Overview', live: true },
-    { icon: Sparkles, label: 'Forecasting Analysis', live: true },
+    { icon: Sparkles, label: 'Supplier Risk Radar', live: true },
   ];
 
   const logisticsItems = [
@@ -54,26 +55,28 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, onClose }) => {
   };
 
   return (
-    <aside className={`sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
+    <aside className={`sidebar ${isMobileOpen ? 'mobile-open' : ''} ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
         <div className="logo-container">
           <div className="logo-icon shadow-sm">D</div>
-          <div className="logo-text">
-            <h4>Depot Manager</h4>
-            <span>Logistics Control System</span>
-          </div>
+          {!isCollapsed && (
+            <div className="logo-text">
+              <h4>Depot Manager</h4>
+              <span>Logistics Control System</span>
+            </div>
+          )}
         </div>
         <button className="mobile-close-btn" onClick={onClose}>
           <X size={16} />
         </button>
-        <button className="collapse-btn">
-          <ChevronLeft size={16} />
+        <button className="collapse-btn" onClick={onToggleCollapse}>
+          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
       </div>
 
       <nav className="sidebar-nav">
         <div className="nav-section">
-          <p className="section-title">MAIN MENU</p>
+          {!isCollapsed && <p className="section-title">MAIN MENU</p>}
           {menuItems.map((item, i) => (
             <button
               key={i}
@@ -81,15 +84,15 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, onClose }) => {
               onClick={() => handleNavClick(item.label)}
             >
               <item.icon size={20} className={activeItem === item.label ? 'pulse' : ''} />
-              <span>{item.label}</span>
-              {item.live && <span className="live-pill">LIVE</span>}
+              {!isCollapsed && <span>{item.label}</span>}
+              {!isCollapsed && item.live && <span className="live-pill">LIVE</span>}
               {activeItem === item.label && <div className="active-indicator" />}
             </button>
           ))}
         </div>
 
         <div className="nav-section">
-          <p className="section-title">LOGISTICS NETWORK</p>
+          {!isCollapsed && <p className="section-title">LOGISTICS NETWORK</p>}
           {logisticsItems.map((item, i) => (
             <button
               key={i}
@@ -97,15 +100,15 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, onClose }) => {
               onClick={() => handleNavClick(item.label)}
             >
               <item.icon size={20} />
-              <span>{item.label}</span>
-              {item.live && <span className="live-pill">LIVE</span>}
+              {!isCollapsed && <span>{item.label}</span>}
+              {!isCollapsed && item.live && <span className="live-pill">LIVE</span>}
               {activeItem === item.label && <div className="active-indicator" />}
             </button>
           ))}
         </div>
 
         <div className="nav-section">
-          <p className="section-title">SYSTEM</p>
+          {!isCollapsed && <p className="section-title">SYSTEM</p>}
           {otherItems.map((item, i) => (
             <button
               key={i}
@@ -113,15 +116,15 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, onClose }) => {
               onClick={() => handleNavClick(item.label)}
             >
               <item.icon size={20} />
-              <span>{item.label}</span>
-              {item.badge && <span className="badge">{item.badge}</span>}
+              {!isCollapsed && <span>{item.label}</span>}
+              {!isCollapsed && item.badge && <span className="badge">{item.badge}</span>}
               {activeItem === item.label && <div className="active-indicator" />}
             </button>
           ))}
         </div>
 
         <div className="nav-section">
-          <p className="section-title">SYSTEM CONTROL</p>
+          {!isCollapsed && <p className="section-title">SYSTEM CONTROL</p>}
           {accountItems.map((item, i) => (
             <button
               key={i}
@@ -129,7 +132,7 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, onClose }) => {
               onClick={() => handleNavClick(item.label)}
             >
               <item.icon size={20} />
-              <span>{item.label}</span>
+              {!isCollapsed && <span>{item.label}</span>}
               {activeItem === item.label && <div className="active-indicator" />}
             </button>
           ))}
@@ -141,13 +144,15 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, onClose }) => {
           <div className="user-avatar shadow-md">
             {user?.name?.charAt(0) || user?.first_name?.charAt(0) || 'U'}
           </div>
-          <div className="user-info">
-            <strong>
-              {user?.name || user?.first_name || user?.firstName || user?.email?.split('@')[0] || 'User'}
-            </strong>
-            <span>{user?.role === 'admin' ? 'Super Admin' : 'Network Manager'}</span>
-          </div>
-          <Settings size={16} className="settings-icon spin-on-hover" />
+          {!isCollapsed && (
+            <div className="user-info">
+              <strong>
+                {user?.name || user?.first_name || user?.firstName || user?.email?.split('@')[0] || 'User'}
+              </strong>
+              <span>{user?.role === 'admin' ? 'Super Admin' : 'Network Manager'}</span>
+            </div>
+          )}
+          {!isCollapsed && <Settings size={16} className="settings-icon spin-on-hover" />}
         </div>
       </div>
     </aside>

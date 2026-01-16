@@ -33,25 +33,41 @@ const AddTransactionModal = ({ isOpen, onClose, product, depots, onSuccess }) =>
         }
 
         if (activeTab === 'stock-in') {
-            const newStock = product.stock + qty;
-            const belowReorder = newStock < product.reorderPoint;
+            // Get depot-specific stock
+            const depotStock = product.depotDistribution?.find(d => d.depotId === formData.depotId);
+            const currentDepotStock = depotStock?.quantity || 0;
+            const newDepotStock = currentDepotStock + qty;
+            const newTotalStock = product.stock + qty;
+            const belowReorder = newTotalStock < product.reorderPoint;
+            
             setPreview({
-                currentStock: product.stock,
-                newStock,
+                currentStock: currentDepotStock,
+                newStock: newDepotStock,
+                totalStock: product.stock,
+                newTotalStock: newTotalStock,
                 change: `+${qty}`,
                 status: belowReorder ? 'warning' : 'safe',
-                message: belowReorder ? 'Still below reorder point' : 'Stock level healthy'
+                message: belowReorder ? 'Still below reorder point' : 'Stock level healthy',
+                depotName: depots.find(d => (d._id || d.id) === formData.depotId)?.name
             });
         } else if (activeTab === 'stock-out') {
-            const newStock = product.stock - qty;
-            const belowReorder = newStock < product.reorderPoint;
-            const negative = newStock < 0;
+            // Get depot-specific stock
+            const depotStock = product.depotDistribution?.find(d => d.depotId === formData.depotId);
+            const currentDepotStock = depotStock?.quantity || 0;
+            const newDepotStock = currentDepotStock - qty;
+            const newTotalStock = product.stock - qty;
+            const belowReorder = newTotalStock < product.reorderPoint;
+            const insufficientDepotStock = currentDepotStock < qty;
+            
             setPreview({
-                currentStock: product.stock,
-                newStock: Math.max(0, newStock),
+                currentStock: currentDepotStock,
+                newStock: Math.max(0, newDepotStock),
+                totalStock: product.stock,
+                newTotalStock: Math.max(0, newTotalStock),
                 change: `-${qty}`,
-                status: negative ? 'critical' : (belowReorder ? 'warning' : 'safe'),
-                message: negative ? 'Insufficient stock!' : (belowReorder ? 'Below reorder point' : 'Stock level acceptable')
+                status: insufficientDepotStock ? 'critical' : (belowReorder ? 'warning' : 'safe'),
+                message: insufficientDepotStock ? 'Insufficient stock in this depot!' : (belowReorder ? 'Below reorder point' : 'Stock level acceptable'),
+                depotName: depots.find(d => (d._id || d.id) === formData.depotId)?.name
             });
         } else if (activeTab === 'transfer') {
             const fromDepot = product.depotDistribution?.find(d => d.depotId === formData.fromDepotId);
@@ -310,11 +326,11 @@ const AddTransactionModal = ({ isOpen, onClose, product, depots, onSuccess }) =>
                         <div className={`preview-box ${preview.status}`}>
                             <div className="preview-header">
                                 <Package size={16} />
-                                <span>Stock Preview</span>
+                                <span>Stock Preview {preview.depotName && `- ${preview.depotName}`}</span>
                             </div>
                             <div className="preview-content">
                                 <div className="preview-row">
-                                    <span>Current Stock:</span>
+                                    <span>Current Stock (in depot):</span>
                                     <strong>{preview.currentStock} units</strong>
                                 </div>
                                 <div className="preview-row">
@@ -324,9 +340,15 @@ const AddTransactionModal = ({ isOpen, onClose, product, depots, onSuccess }) =>
                                     </strong>
                                 </div>
                                 <div className="preview-row">
-                                    <span>New Stock:</span>
+                                    <span>New Stock (in depot):</span>
                                     <strong>{preview.newStock} units</strong>
                                 </div>
+                                {preview.totalStock !== undefined && (
+                                    <div className="preview-row" style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border)', fontSize: '12px', opacity: 0.8 }}>
+                                        <span>Total Stock (all depots):</span>
+                                        <span>{preview.totalStock} → {preview.newTotalStock} units</span>
+                                    </div>
+                                )}
                                 <div className="preview-message">
                                     {preview.status !== 'safe' && <AlertCircle size={14} />}
                                     {preview.message}

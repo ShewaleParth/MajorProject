@@ -38,7 +38,7 @@ const Dashboard = () => {
 
     return (
         <div className="dashboard-container">
-            <div className="metrics-grid">
+            <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', width: '100%' }}>
                 <MetricCard
                     title="Inbound Stock"
                     value={formatValue(metrics?.incoming?.value, false)}

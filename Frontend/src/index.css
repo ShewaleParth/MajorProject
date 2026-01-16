@@ -625,8 +625,6 @@ input {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 24px;
-  flex: 1;
-  min-width: 280px;
   min-height: 220px;
   box-shadow: var(--shadow-sm);
   transition: all 0.2s ease;
@@ -778,7 +776,7 @@ input {
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 24px;
   width: 100%;
   margin-bottom: 24px;

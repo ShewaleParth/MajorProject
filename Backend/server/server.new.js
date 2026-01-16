@@ -24,6 +24,7 @@ const forecastRoutes = require('./routes/forecasts');
 const transactionRoutes = require('./routes/transactions');
 const dashboardRoutes = require('./routes/dashboard');
 const reportsRoutes = require('./routes/reports');
+const alertRoutes = require('./routes/alert');
 
 // Initialize Redis (Upstash REST API)
 const { redis } = require('./config/redis');
@@ -58,6 +59,7 @@ app.locals.Depot = models.Depot;
 app.locals.Transaction = models.Transaction;
 app.locals.Forecast = models.Forecast;
 app.locals.Alert = models.Alert;
+app.locals.Report = models.Report;
 
 // Initialize services
 initializeEmailService();
@@ -106,6 +108,7 @@ app.use('/api/forecasts', authenticateToken, forecastRoutes);
 app.use('/api/transactions', authenticateToken, transactionRoutes);
 app.use('/api/dashboard', authenticateToken, dashboardRoutes);
 app.use('/api/reports', authenticateToken, reportsRoutes);
+app.use('/api/alerts', authenticateToken, alertRoutes);
 
 // WebSocket connection handling
 io.on('connection', (socket) => {

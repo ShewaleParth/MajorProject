@@ -14,7 +14,7 @@ const { recalculateDepotMetrics } = require('../utils/depotHelpers');
 // GET all products
 router.get('/', async (req, res, next) => {
   try {
-    const { search, category, status, location, page = 1, limit = 50 } = req.query;
+    const { search, category, status, location, page = 1, limit = 10000 } = req.query;
     const query = { userId: req.userId };
 
     if (location) {
@@ -185,6 +185,7 @@ router.post('/bulk', async (req, res, next) => {
   try {
     const productsData = req.body;
     const userId = req.userId;
+    const io = req.app.get('io'); // Get WebSocket instance
 
     console.log('Bulk upload request received:', {
       itemCount: Array.isArray(productsData) ? productsData.length : 'not an array',
@@ -202,20 +203,15 @@ router.post('/bulk', async (req, res, next) => {
       return res.status(400).json({ message: 'No products provided' });
     }
 
-    // Fetch all user's depots for random assignment
-    const userDepots = await Depot.find({ userId });
-
-    if (userDepots.length === 0) {
-      return res.status(400).json({
-        message: 'No depots found. Please create at least one depot before uploading products.'
-      });
-    }
-
-    console.log(`✅ Found ${userDepots.length} depots for random assignment`);
+    // Fetch all user's depots
+    let userDepots = await Depot.find({ userId });
+    console.log(`✅ Found ${userDepots.length} existing depots`);
 
     const results = {
       success: 0,
       failed: 0,
+      depotsCreated: 0,
+      transactionsCreated: 0,
       errors: []
     };
 
@@ -238,20 +234,91 @@ router.post('/bulk', async (req, res, next) => {
         const stockoutIn = item.stockoutin || item.stockoutIn || item.StockoutIn;
         const reorderQty = item.reorderqty || item.reorderQty || item.ReorderQty;
 
-        // NEW: Depot assignment from CSV
+        // Depot assignment from CSV
         const depotName = item.depot || item.Depot || item.depotName || item.DepotName;
-        const depotLocation = item.depotLocation || item.DepotLocation || item.location;
+        const depotLocation = item.depotLocation || item.DepotLocation || item.location || item.Location;
+        const depotCapacity = item.depotCapacity || item.DepotCapacity || 10000;
 
         // Basic validation
         if (!sku || !name) {
           throw new Error(`Missing required fields: ${!sku ? 'sku' : ''} ${!name ? 'name' : ''}`.trim());
         }
 
-        // Check if exists
+        // AUTO-CREATE DEPOT if specified in CSV and doesn't exist
+        let targetDepot = null;
+        
+        if (depotName) {
+          // Try to find existing depot
+          targetDepot = userDepots.find(d =>
+            d.name.toLowerCase() === depotName.toLowerCase() ||
+            d.name.toLowerCase().includes(depotName.toLowerCase())
+          );
+
+          // If not found, CREATE IT
+          if (!targetDepot) {
+            console.log(`🏭 Creating new depot: ${depotName}`);
+            targetDepot = new Depot({
+              userId,
+              name: depotName,
+              location: depotLocation || 'Unknown',
+              capacity: Number(depotCapacity),
+              currentUtilization: 0,
+              itemsStored: 0,
+              products: [],
+              status: 'normal'
+            });
+            await targetDepot.save();
+            userDepots.push(targetDepot); // Add to cache
+            results.depotsCreated++;
+            
+            // Emit WebSocket event for depot creation
+            if (io) {
+              io.emit('depot:created', {
+                depotId: targetDepot._id,
+                depotName: targetDepot.name,
+                location: targetDepot.location
+              });
+            }
+            console.log(`✅ Created depot: ${depotName} at ${depotLocation}`);
+          }
+        }
+
+        // Fallback: if no depot specified or found, use first available or create default
+        if (!targetDepot) {
+          if (userDepots.length > 0) {
+            targetDepot = userDepots[Math.floor(Math.random() * userDepots.length)];
+          } else {
+            // Create a default depot
+            console.log(`🏭 Creating default depot`);
+            targetDepot = new Depot({
+              userId,
+              name: 'Main Warehouse',
+              location: 'Default Location',
+              capacity: 10000,
+              currentUtilization: 0,
+              itemsStored: 0,
+              products: [],
+              status: 'normal'
+            });
+            await targetDepot.save();
+            userDepots.push(targetDepot);
+            results.depotsCreated++;
+            
+            if (io) {
+              io.emit('depot:created', {
+                depotId: targetDepot._id,
+                depotName: targetDepot.name,
+                location: targetDepot.location
+              });
+            }
+          }
+        }
+
+        // Check if product exists
         let product = await Product.findOne({ sku, userId });
 
         if (product) {
-          // Update existing product
+          // UPDATE EXISTING PRODUCT
           if (name) product.name = name;
           if (category) product.category = category;
           if (reorderPoint !== undefined) product.reorderPoint = Number(reorderPoint);
@@ -266,42 +333,20 @@ router.post('/bulk', async (req, res, next) => {
           if (stockoutIn !== undefined) product.stockoutIn = Number(stockoutIn);
           if (reorderQty !== undefined) product.reorderQty = Number(reorderQty);
 
-          // Add stock to existing depot distribution or assign to depot
+          // Add stock to depot
           const stockToAdd = Number(stock) || 0;
           if (stockToAdd > 0) {
-            // NEW: Try to find depot by name or location from CSV
-            let targetDepot = null;
+            const previousStock = product.stock || 0;
 
-            if (depotName) {
-              targetDepot = userDepots.find(d =>
-                d.name.toLowerCase() === depotName.toLowerCase() ||
-                d.name.toLowerCase().includes(depotName.toLowerCase())
-              );
-            }
-
-            if (!targetDepot && depotLocation) {
-              targetDepot = userDepots.find(d =>
-                d.location.toLowerCase() === depotLocation.toLowerCase() ||
-                d.location.toLowerCase().includes(depotLocation.toLowerCase())
-              );
-            }
-
-            // Fallback to random depot if not specified or not found
-            if (!targetDepot) {
-              targetDepot = userDepots[Math.floor(Math.random() * userDepots.length)];
-            }
-
-            // Check if product already has stock in this depot
+            // Update product depot distribution
             const existingDepotIndex = product.depotDistribution.findIndex(
               d => d.depotId.toString() === targetDepot._id.toString()
             );
 
             if (existingDepotIndex >= 0) {
-              // Add to existing depot distribution
               product.depotDistribution[existingDepotIndex].quantity += stockToAdd;
               product.depotDistribution[existingDepotIndex].lastUpdated = new Date();
             } else {
-              // Add new depot to distribution
               product.depotDistribution.push({
                 depotId: targetDepot._id,
                 depotName: targetDepot.name,
@@ -329,36 +374,56 @@ router.post('/bulk', async (req, res, next) => {
             }
 
             await targetDepot.save();
-            const assignmentMethod = depotName || depotLocation ? '(CSV specified)' : '(random)';
+            
+            // CREATE TRANSACTION RECORD
+            const newStock = previousStock + stockToAdd;
+            const transaction = new Transaction({
+              userId,
+              productId: product._id,
+              productName: product.name,
+              productSku: product.sku,
+              transactionType: 'stock-in',
+              quantity: stockToAdd,
+              toDepot: targetDepot.name,
+              toDepotId: targetDepot._id,
+              previousStock: previousStock,
+              newStock: newStock,
+              reason: 'CSV Bulk Upload',
+              performedBy: 'System',
+              timestamp: new Date(),
+              createdAt: new Date()
+            });
+            await transaction.save();
+            results.transactionsCreated++;
+            
+            // EMIT WEBSOCKET EVENT
+            if (io) {
+              io.emit('transaction:created', {
+                productId: product._id,
+                productName: product.name,
+                productSku: product.sku,
+                transactionType: 'stock-in',
+                quantity: stockToAdd,
+                depotName: targetDepot.name,
+                depotId: targetDepot._id
+              });
+              
+              io.emit('depot:stock-updated', {
+                depotId: targetDepot._id,
+                depotName: targetDepot.name,
+                currentUtilization: targetDepot.currentUtilization,
+                itemsStored: targetDepot.itemsStored
+              });
+            }
+            
+            const assignmentMethod = depotName ? '(CSV specified)' : '(random)';
             console.log(`📦 Added ${stockToAdd} units of ${sku} to depot: ${targetDepot.name} ${assignmentMethod}`);
           }
 
           product.updatedAt = new Date();
         } else {
-          // Create new product with depot assignment (from CSV or random)
+          // CREATE NEW PRODUCT
           const stockQty = Number(stock) || 0;
-
-          // NEW: Try to find depot by name or location from CSV
-          let targetDepot = null;
-
-          if (depotName) {
-            targetDepot = userDepots.find(d =>
-              d.name.toLowerCase() === depotName.toLowerCase() ||
-              d.name.toLowerCase().includes(depotName.toLowerCase())
-            );
-          }
-
-          if (!targetDepot && depotLocation) {
-            targetDepot = userDepots.find(d =>
-              d.location.toLowerCase() === depotLocation.toLowerCase() ||
-              d.location.toLowerCase().includes(depotLocation.toLowerCase())
-            );
-          }
-
-          // Fallback to random depot if not specified or not found
-          if (!targetDepot) {
-            targetDepot = userDepots[Math.floor(Math.random() * userDepots.length)];
-          }
 
           product = new Product({
             userId,
@@ -396,8 +461,57 @@ router.post('/bulk', async (req, res, next) => {
             });
 
             await targetDepot.save();
-            const assignmentMethod = depotName || depotLocation ? '(CSV specified)' : '(random)';
-            console.log(`✅ Assigned new product ${sku} to depot: ${targetDepot.name} ${assignmentMethod}`);
+            
+            // CREATE TRANSACTION RECORD
+            const transaction = new Transaction({
+              userId,
+              productId: product._id,
+              productName: product.name,
+              productSku: product.sku,
+              transactionType: 'stock-in',
+              quantity: stockQty,
+              toDepot: targetDepot.name,
+              toDepotId: targetDepot._id,
+              previousStock: 0,
+              newStock: stockQty,
+              reason: 'CSV Bulk Upload - New Product',
+              performedBy: 'System',
+              timestamp: new Date(),
+              createdAt: new Date()
+            });
+            await transaction.save();
+            results.transactionsCreated++;
+            
+            // EMIT WEBSOCKET EVENTS
+            if (io) {
+              io.emit('product:depot-assigned', {
+                productId: product._id,
+                productName: product.name,
+                depotId: targetDepot._id,
+                depotName: targetDepot.name,
+                quantity: stockQty
+              });
+              
+              io.emit('transaction:created', {
+                productId: product._id,
+                productName: product.name,
+                productSku: product.sku,
+                transactionType: 'stock-in',
+                quantity: stockQty,
+                depotName: targetDepot.name,
+                depotId: targetDepot._id
+              });
+              
+              io.emit('depot:stock-updated', {
+                depotId: targetDepot._id,
+                depotName: targetDepot.name,
+                currentUtilization: targetDepot.currentUtilization,
+                itemsStored: targetDepot.itemsStored
+              });
+            }
+            
+            const assignmentMethod = depotName ? '(CSV specified)' : '(random)';
+            console.log(`✅ Created product ${sku} and assigned to depot: ${targetDepot.name} ${assignmentMethod}`);
           }
         }
 

@@ -9,7 +9,7 @@ const { createStockAlert } = require('../utils/alertHelpers');
 router.get('/', async (req, res, next) => {
   try {
     const userId = req.userId;
-    const { depotId, productId, type, startDate, endDate, limit = 50 } = req.query;
+    const { depotId, productId, type, startDate, endDate, limit = 1000 } = req.query;
 
     const query = { userId };
     

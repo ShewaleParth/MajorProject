@@ -5,7 +5,7 @@ const Forecast = require('../models/Forecast');
 // GET all forecasts
 router.get('/', async (req, res, next) => {
   try {
-    const { sku, limit = 50, sortBy = 'updatedAt' } = req.query;
+    const { sku, limit = 10000, sortBy = 'updatedAt' } = req.query;
     const userId = req.userId; // From JWT token
 
     const query = { userId };

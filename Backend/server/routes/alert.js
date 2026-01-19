@@ -8,32 +8,38 @@ const router = express.Router();
 // Get all alerts with filtering and pagination
 router.get('/', async (req, res) => {
   try {
+    const userId = req.userId; // From auth middleware
     const {
       page = 1,
       limit = 10000,
       type,
       severity,
+      category,
       isRead,
       isResolved,
       sortBy = 'createdAt',
       sortOrder = 'desc'
     } = req.query;
 
-    const query = {};
+    const query = { userId }; // Filter by user
 
     // Apply filters
     if (type) {
       query.type = type;
     }
-    
+
     if (severity) {
       query.severity = severity;
     }
-    
+
+    if (category) {
+      query.category = category;
+    }
+
     if (isRead !== undefined) {
       query.isRead = isRead === 'true';
     }
-    
+
     if (isResolved !== undefined) {
       query.isResolved = isResolved === 'true';
     }
@@ -43,7 +49,8 @@ router.get('/', async (req, res) => {
     const sortDirection = sortOrder === 'desc' ? -1 : 1;
 
     const alerts = await Alert.find(query)
-      .populate('relatedEntity.entityId')
+      .populate('productId', 'name sku')
+      .populate('depotId', 'name location')
       .sort({ [sortBy]: sortDirection })
       .skip(skip)
       .limit(parseInt(limit));
@@ -69,11 +76,11 @@ router.get('/:id', async (req, res) => {
   try {
     const alert = await Alert.findById(req.params.id)
       .populate('relatedEntity.entityId');
-    
+
     if (!alert) {
       return res.status(404).json({ error: 'Alert not found' });
     }
-    
+
     res.json(alert);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -99,11 +106,11 @@ router.patch('/:id/read', async (req, res) => {
       { isRead: true },
       { new: true }
     );
-    
+
     if (!alert) {
       return res.status(404).json({ error: 'Alert not found' });
     }
-    
+
     res.json(alert);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -114,22 +121,22 @@ router.patch('/:id/read', async (req, res) => {
 router.patch('/:id/resolve', async (req, res) => {
   try {
     const { resolvedBy, resolutionNotes } = req.body;
-    
+
     const alert = await Alert.findByIdAndUpdate(
       req.params.id,
-      { 
-        isResolved: true, 
+      {
+        isResolved: true,
         resolvedAt: new Date(),
         resolvedBy,
         resolutionNotes
       },
       { new: true }
     );
-    
+
     if (!alert) {
       return res.status(404).json({ error: 'Alert not found' });
     }
-    
+
     res.json(alert);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -189,13 +196,42 @@ router.get('/stats/overview', async (req, res) => {
 router.patch('/bulk/read', async (req, res) => {
   try {
     const { alertIds } = req.body;
-    
+
     const result = await Alert.updateMany(
       { _id: { $in: alertIds } },
       { isRead: true }
     );
-    
-    res.json({ 
+
+    res.json({
+      message: `${result.modifiedCount} alerts marked as read`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Get unread notification count
+router.get('/unread/count', async (req, res) => {
+  try {
+    const userId = req.userId;
+    const count = await Alert.countDocuments({ userId, isRead: false });
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Mark all alerts as read for user
+router.patch('/mark-all-read', async (req, res) => {
+  try {
+    const userId = req.userId;
+    const result = await Alert.updateMany(
+      { userId, isRead: false },
+      { isRead: true }
+    );
+
+    res.json({
       message: `${result.modifiedCount} alerts marked as read`,
       modifiedCount: result.modifiedCount
     });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Key, ArrowRight, ArrowLeft, RefreshCw } from 'lucide-react';
 import './Auth.css';
 
 const VerifyOTP = () => {
@@ -32,13 +33,13 @@ const VerifyOTP = () => {
     }
 
     const result = await verifyOTP(email, otp);
-    
+
     if (result.success) {
       navigate('/');
     } else {
       setError(result.message);
     }
-    
+
     setLoading(false);
   };
 
@@ -50,87 +51,95 @@ const VerifyOTP = () => {
     // Resend OTP by calling signup again with the same email
     // This will trigger a new OTP to be sent
     const result = await signup('', '', email, '');
-    
+
     if (result.success) {
       setSuccess('New OTP sent to your email!');
     } else {
       setError('Failed to resend OTP. Please try again.');
     }
-    
+
     setResending(false);
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h1>Verify Your Email</h1>
+    <div className="auth-container-centered">
+      <div className="auth-card-modern">
+        <div className="auth-form-header">
+          <h2>Verify Your Email</h2>
           <p>
             We've sent a 6-digit code to <strong>{email}</strong>
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form onSubmit={handleSubmit} className="auth-form-modern">
           {error && (
-            <div className="error-message">
+            <div className="error-message-modern">
               <span className="error-icon">⚠️</span>
               {error}
             </div>
           )}
 
           {success && (
-            <div className="success-message">
+            <div className="success-message-modern">
               <span className="success-icon">✓</span>
               {success}
             </div>
           )}
 
-          <div className="form-group">
+          <div className="form-group-modern">
             <label htmlFor="otp">Verification Code</label>
-            <input
-              type="text"
-              id="otp"
-              name="otp"
-              value={otp}
-              onChange={(e) => {
-                setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
-                setError('');
-              }}
-              placeholder="000000"
-              maxLength="6"
-              className="otp-input"
-              required
-            />
-            <small>Enter the 6-digit code from your email</small>
+            <div className="input-wrapper">
+              <Key className="input-icon" size={20} />
+              <input
+                type="text"
+                id="otp"
+                name="otp"
+                value={otp}
+                onChange={(e) => {
+                  setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                  setError('');
+                }}
+                placeholder="000000"
+                maxLength="6"
+                className="otp-input-modern"
+                required
+              />
+            </div>
+            <small className="input-hint">Enter the 6-digit code from your email</small>
           </div>
 
-          <button type="submit" className="auth-button" disabled={loading}>
+          <button type="submit" className="auth-button-modern" disabled={loading}>
             {loading ? (
               <>
-                <span className="spinner"></span>
+                <span className="spinner-modern"></span>
                 Verifying...
               </>
             ) : (
-              'Verify Email'
+              <>
+                Verify Email
+                <ArrowRight size={20} />
+              </>
             )}
           </button>
 
-          <div className="resend-section">
+          <div className="resend-section-modern">
             <p>Didn't receive the code?</p>
             <button
               type="button"
               onClick={handleResend}
-              className="resend-button"
+              className="resend-button-modern"
               disabled={resending}
             >
+              <RefreshCw size={16} className={resending ? 'spinning' : ''} />
               {resending ? 'Sending...' : 'Resend Code'}
             </button>
           </div>
         </form>
 
-        <div className="auth-footer">
-          <Link to="/signup" className="auth-link">
-            ← Back to signup
+        <div className="auth-footer-modern">
+          <Link to="/signup" className="auth-link-modern back-link">
+            <ArrowLeft size={16} />
+            Back to signup
           </Link>
         </div>
       </div>

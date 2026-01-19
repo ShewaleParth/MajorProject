@@ -8,7 +8,7 @@ const Product = require('../models/Product');
 const Depot = require('../models/Depot');
 const Transaction = require('../models/Transaction');
 const { generateUniqueSKU, updateProductStatus, updateProductStockFromDepots } = require('../utils/productHelpers');
-const { createStockAlert } = require('../utils/alertHelpers');
+const { createStockAlert, checkDepotCapacity } = require('../utils/alertHelpers');
 const { recalculateDepotMetrics } = require('../utils/depotHelpers');
 
 // GET all products
@@ -152,6 +152,9 @@ router.post('/', async (req, res, next) => {
     });
     await depot.save();
 
+    // Check depot capacity for alerts
+    await checkDepotCapacity(depot._id, userId);
+
     // Create transaction record
     const transaction = new Transaction({
       userId,
@@ -246,7 +249,7 @@ router.post('/bulk', async (req, res, next) => {
 
         // AUTO-CREATE DEPOT if specified in CSV and doesn't exist
         let targetDepot = null;
-        
+
         if (depotName) {
           // Try to find existing depot
           targetDepot = userDepots.find(d =>
@@ -270,7 +273,7 @@ router.post('/bulk', async (req, res, next) => {
             await targetDepot.save();
             userDepots.push(targetDepot); // Add to cache
             results.depotsCreated++;
-            
+
             // Emit WebSocket event for depot creation
             if (io) {
               io.emit('depot:created', {
@@ -303,7 +306,7 @@ router.post('/bulk', async (req, res, next) => {
             await targetDepot.save();
             userDepots.push(targetDepot);
             results.depotsCreated++;
-            
+
             if (io) {
               io.emit('depot:created', {
                 depotId: targetDepot._id,
@@ -374,7 +377,8 @@ router.post('/bulk', async (req, res, next) => {
             }
 
             await targetDepot.save();
-            
+            await checkDepotCapacity(targetDepot._id, userId);
+
             // CREATE TRANSACTION RECORD
             const newStock = previousStock + stockToAdd;
             const transaction = new Transaction({
@@ -395,7 +399,7 @@ router.post('/bulk', async (req, res, next) => {
             });
             await transaction.save();
             results.transactionsCreated++;
-            
+
             // EMIT WEBSOCKET EVENT
             if (io) {
               io.emit('transaction:created', {
@@ -407,7 +411,7 @@ router.post('/bulk', async (req, res, next) => {
                 depotName: targetDepot.name,
                 depotId: targetDepot._id
               });
-              
+
               io.emit('depot:stock-updated', {
                 depotId: targetDepot._id,
                 depotName: targetDepot.name,
@@ -415,7 +419,7 @@ router.post('/bulk', async (req, res, next) => {
                 itemsStored: targetDepot.itemsStored
               });
             }
-            
+
             const assignmentMethod = depotName ? '(CSV specified)' : '(random)';
             console.log(`📦 Added ${stockToAdd} units of ${sku} to depot: ${targetDepot.name} ${assignmentMethod}`);
           }
@@ -461,7 +465,8 @@ router.post('/bulk', async (req, res, next) => {
             });
 
             await targetDepot.save();
-            
+            await checkDepotCapacity(targetDepot._id, userId);
+
             // CREATE TRANSACTION RECORD
             const transaction = new Transaction({
               userId,
@@ -481,7 +486,7 @@ router.post('/bulk', async (req, res, next) => {
             });
             await transaction.save();
             results.transactionsCreated++;
-            
+
             // EMIT WEBSOCKET EVENTS
             if (io) {
               io.emit('product:depot-assigned', {
@@ -491,7 +496,7 @@ router.post('/bulk', async (req, res, next) => {
                 depotName: targetDepot.name,
                 quantity: stockQty
               });
-              
+
               io.emit('transaction:created', {
                 productId: product._id,
                 productName: product.name,
@@ -501,7 +506,7 @@ router.post('/bulk', async (req, res, next) => {
                 depotName: targetDepot.name,
                 depotId: targetDepot._id
               });
-              
+
               io.emit('depot:stock-updated', {
                 depotId: targetDepot._id,
                 depotName: targetDepot.name,
@@ -509,7 +514,7 @@ router.post('/bulk', async (req, res, next) => {
                 itemsStored: targetDepot.itemsStored
               });
             }
-            
+
             const assignmentMethod = depotName ? '(CSV specified)' : '(random)';
             console.log(`✅ Created product ${sku} and assigned to depot: ${targetDepot.name} ${assignmentMethod}`);
           }
@@ -922,10 +927,35 @@ router.delete('/:id', async (req, res, next) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    // Get all depots that have this product
+    const depotIds = product.depotDistribution.map(d => d.depotId);
+
+    // Remove product from all depots' products arrays
+    if (depotIds.length > 0) {
+      await Depot.updateMany(
+        { _id: { $in: depotIds }, userId },
+        { $pull: { products: { productId: req.params.id } } }
+      );
+
+      // Recalculate metrics for each affected depot
+      for (const depotId of depotIds) {
+        const depot = await Depot.findById(depotId);
+        if (depot) {
+          await depot.save(); // Triggers pre-save hook to recalculate metrics
+        }
+      }
+    }
+
+    // Delete the product
     await Product.findByIdAndDelete(req.params.id);
+
+    // Delete all alerts related to this product
     await Alert.deleteMany({ productId: req.params.id, userId });
 
-    res.json({ message: 'Product deleted successfully' });
+    res.json({
+      message: 'Product deleted successfully',
+      depotsUpdated: depotIds.length
+    });
   } catch (error) {
     next(error);
   }

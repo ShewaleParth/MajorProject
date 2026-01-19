@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
 import './Auth.css';
 
 const Login = () => {
@@ -12,6 +13,7 @@ const Login = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -34,83 +36,112 @@ const Login = () => {
     }
 
     const result = await login(formData.email, formData.password);
-    
+
     if (result.success) {
       navigate('/');
     } else {
       setError(result.message);
     }
-    
+
     setLoading(false);
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h1>Welcome Back</h1>
-          <p>Sign in to your InventroOps account</p>
-        </div>
+    <div className="auth-container-modern">
+      {/* Left Side - Image */}
+      <div className="auth-image-section">
+        <div className="auth-image-overlay-clean"></div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          {error && (
-            <div className="error-message">
-              <span className="error-icon">⚠️</span>
-              {error}
-            </div>
-          )}
-
-          <div className="form-group">
-            <label htmlFor="email">Email Address</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="you@example.com"
-              required
-            />
+      {/* Right Side - Login Form */}
+      <div className="auth-form-section">
+        <div className="auth-form-container">
+          <div className="auth-form-header">
+            <h2>Welcome Back</h2>
+            <p>Sign in to continue to your dashboard</p>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-            />
-          </div>
-
-          <div className="form-footer">
-            <Link to="/forgot-password" className="forgot-link">
-              Forgot password?
-            </Link>
-          </div>
-
-          <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? (
-              <>
-                <span className="spinner"></span>
-                Signing in...
-              </>
-            ) : (
-              'Sign In'
+          <form onSubmit={handleSubmit} className="auth-form-modern">
+            {error && (
+              <div className="error-message-modern">
+                <span className="error-icon">⚠️</span>
+                {error}
+              </div>
             )}
-          </button>
-        </form>
 
-        <div className="auth-footer">
-          <p>
-            Don't have an account?{' '}
-            <Link to="/signup" className="auth-link">
-              Sign up
-            </Link>
-          </p>
+            <div className="form-group-modern">
+              <label htmlFor="email">Email Address</label>
+              <div className="input-wrapper">
+                <Mail className="input-icon" size={20} />
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group-modern">
+              <label htmlFor="password">Password</label>
+              <div className="input-wrapper">
+                <Lock className="input-icon" size={20} />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff size={20} />
+                  ) : (
+                    <Eye size={20} />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="form-footer-modern">
+              <Link to="/forgot-password" className="forgot-link-modern">
+                Forgot password?
+              </Link>
+            </div>
+
+            <button type="submit" className="auth-button-modern" disabled={loading}>
+              {loading ? (
+                <>
+                  <span className="spinner-modern"></span>
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight size={20} />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="auth-footer-modern">
+            <p>
+              Don't have an account?{' '}
+              <Link to="/signup" className="auth-link-modern">
+                Sign up
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

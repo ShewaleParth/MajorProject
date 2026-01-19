@@ -16,6 +16,7 @@ import ForecastingAnalysis from './pages/ForecastingAnalysis';
 import Reports from './pages/Reports';
 import MovementTransactions from './pages/MovementTransactions';
 import StockSearchTracking from './pages/StockSearchTracking';
+import Notifications from './pages/Notifications';
 
 
 function App() {
@@ -70,6 +71,8 @@ function App() {
         return <MovementTransactions />;
       case 'Stock Search & Tracking':
         return <StockSearchTracking />;
+      case 'Notifications':
+        return <Notifications />;
       default:
         return (
           <div className="placeholder-view">

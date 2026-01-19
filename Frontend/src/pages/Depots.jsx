@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Warehouse, MapPin, BarChart3, Package, ShieldCheck, AlertTriangle, Search, Plus, ExternalLink, X } from 'lucide-react';
+import { Warehouse, MapPin, BarChart3, Package, ShieldCheck, AlertTriangle, Search, Plus, ExternalLink, X, Trash2 } from 'lucide-react';
 import { api } from '../utils/api';
 import DepotDetails from './DepotDetails';
 
@@ -48,7 +48,7 @@ const AddDepotModal = ({ isOpen, onClose, onAdd }) => {
     );
 };
 
-const DepotCard = ({ depot, onViewDetails }) => {
+const DepotCard = ({ depot, onViewDetails, onDelete }) => {
     const utilization = Math.round((depot.currentUtilization / depot.capacity) * 100) || 0;
     const getStatusColor = (u) => {
         if (u > 85) return '#ef4444'; // Critical
@@ -90,9 +90,21 @@ const DepotCard = ({ depot, onViewDetails }) => {
                     <BarChart3 size={14} />
                     <span>Cap: {depot.capacity?.toLocaleString()} units</span>
                 </div>
-                <button className="view-inventory-btn" onClick={() => onViewDetails(depot.id || depot._id)}>
-                    View Details <ExternalLink size={14} />
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        className="delete-depot-btn"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(depot.id || depot._id, depot.name);
+                        }}
+                        title="Delete depot"
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                    <button className="view-inventory-btn" onClick={() => onViewDetails(depot.id || depot._id)}>
+                        View Details <ExternalLink size={14} />
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -164,18 +176,35 @@ const Depots = () => {
         fetchDepots(); // Refresh data when returning to list
     };
 
+    const handleDeleteDepot = async (depotId, depotName) => {
+        const confirmed = window.confirm(
+            `Are you sure you want to delete "${depotName}"?\n\nThis will permanently remove the depot and update all products that have inventory in this depot. This action cannot be undone.`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            const response = await api.deleteDepot(depotId);
+            alert(`${response.message}\n${response.affectedProducts} product(s) updated.`);
+            fetchDepots(); // Refresh the depot list
+        } catch (error) {
+            console.error('Failed to delete depot:', error);
+            alert(`Error deleting depot: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
     // Filter depots based on search and status
     const filteredDepots = depots.filter(depot => {
         const matchesSearch = depot.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             depot.location.toLowerCase().includes(searchQuery.toLowerCase());
-        
+
         if (statusFilter === 'All') return matchesSearch;
-        
+
         const utilization = Math.round((depot.currentUtilization / depot.capacity) * 100) || 0;
         if (statusFilter === 'Healthy' && utilization <= 60) return matchesSearch;
         if (statusFilter === 'Warning' && utilization > 60 && utilization <= 85) return matchesSearch;
         if (statusFilter === 'Critical' && utilization > 85) return matchesSearch;
-        
+
         return false;
     });
 
@@ -265,25 +294,25 @@ const Depots = () => {
                     />
                 </div>
                 <div className="filter-buttons-group">
-                    <button 
+                    <button
                         className={`filter-btn ${statusFilter === 'All' ? 'active' : ''}`}
                         onClick={() => setStatusFilter('All')}
                     >
                         All Depots
                     </button>
-                    <button 
+                    <button
                         className={`filter-btn ${statusFilter === 'Healthy' ? 'active' : ''}`}
                         onClick={() => setStatusFilter('Healthy')}
                     >
                         Healthy
                     </button>
-                    <button 
+                    <button
                         className={`filter-btn ${statusFilter === 'Warning' ? 'active' : ''}`}
                         onClick={() => setStatusFilter('Warning')}
                     >
                         Warning
                     </button>
-                    <button 
+                    <button
                         className={`filter-btn ${statusFilter === 'Critical' ? 'active' : ''}`}
                         onClick={() => setStatusFilter('Critical')}
                     >
@@ -301,7 +330,12 @@ const Depots = () => {
             ) : (
                 <div className="depots-grid">
                     {filteredDepots.map(depot => (
-                        <DepotCard key={depot._id || depot.id} depot={depot} onViewDetails={handleViewDetails} />
+                        <DepotCard
+                            key={depot._id || depot.id}
+                            depot={depot}
+                            onViewDetails={handleViewDetails}
+                            onDelete={handleDeleteDepot}
+                        />
                     ))}
 
                     {filteredDepots.length === 0 && (

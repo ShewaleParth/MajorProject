@@ -1,4 +1,5 @@
 const Depot = require('../models/Depot');
+const { checkDepotCapacity } = require('./alertHelpers');
 
 // Recalculate depot metrics from actual inventory
 const recalculateDepotMetrics = async (depotId, userId) => {
@@ -13,6 +14,9 @@ const recalculateDepotMetrics = async (depotId, userId) => {
 
     // Just save to trigger the hook
     await depot.save();
+
+    // Check if depot capacity alert is needed
+    await checkDepotCapacity(depotId, userId);
 
     return depot;
   } catch (error) {

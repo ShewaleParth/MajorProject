@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Package,
@@ -18,10 +18,30 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
+import { api } from '../utils/api';
 
 const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, isCollapsed, onClose, onToggleCollapse }) => {
   const { user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
 
+  // Fetch unread notification count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await api.getUnreadCount();
+        setUnreadCount(response.count || 0);
+      } catch (error) {
+        console.error('Error fetching unread count:', error);
+      }
+    };
+
+    fetchUnreadCount();
+
+    // Refresh count every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', live: true },
@@ -37,7 +57,7 @@ const Sidebar = ({ activeItem, setActiveItem, isMobileOpen, isCollapsed, onClose
 
   const otherItems = [
     { icon: FileText, label: 'Reports Export' },
-    { icon: Bell, label: 'Notifications', badge: 12 },
+    { icon: Bell, label: 'Notifications', badge: unreadCount },
   ];
 
   const accountItems = [

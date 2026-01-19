@@ -24,13 +24,13 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = async () => {
       if (storedToken && (!storedUser || storedUser === 'undefined' || storedUser === 'null')) {
         try {
-          const response = await axios.get('/api/auth/verify', {
+          const response = await axios.get('/api/auth/me', {
             headers: { Authorization: `Bearer ${storedToken}` }
           });
-          if (response.data.admin) {
+          if (response.data.user) {
             setToken(storedToken);
-            setUser(response.data.admin);
-            localStorage.setItem('user', JSON.stringify(response.data.admin));
+            setUser(response.data.user);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
           }
         } catch (error) {
           console.error('Failed to recover user session:', error);
@@ -57,12 +57,12 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await axios.post('/api/auth/login', { email, password });
-      const { token, admin } = response.data;
+      const { token, user } = response.data;
 
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(admin));
+      localStorage.setItem('user', JSON.stringify(user));
       setToken(token);
-      setUser(admin);
+      setUser(user);
 
       return { success: true };
     } catch (error) {
@@ -99,12 +99,12 @@ export const AuthProvider = ({ children }) => {
   const verifyOTP = async (email, otp) => {
     try {
       const response = await axios.post('/api/auth/verify-otp', { email, otp });
-      const { token, admin } = response.data;
+      const { token, user } = response.data;
 
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(admin));
+      localStorage.setItem('user', JSON.stringify(user));
       setToken(token);
-      setUser(admin);
+      setUser(user);
 
       return { success: true };
     } catch (error) {

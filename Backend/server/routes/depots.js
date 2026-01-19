@@ -134,10 +134,47 @@ router.get('/:depotId/details', async (req, res, next) => {
   }
 });
 
+// DELETE depot
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+
+    // Find and verify depot ownership
+    const depot = await Depot.findOne({ _id: id, userId });
+    if (!depot) {
+      return res.status(404).json({ message: 'Depot not found' });
+    }
+
+    // Find all products that have this depot in their distribution
+    const affectedProducts = await Product.find({
+      userId,
+      'depotDistribution.depotId': id
+    });
+
+    // Remove depot from each product's distribution array
+    for (const product of affectedProducts) {
+      product.depotDistribution = product.depotDistribution.filter(
+        d => d.depotId.toString() !== id
+      );
+      await product.save(); // Triggers pre-save hook to recalculate stock
+    }
+
+    // Delete the depot
+    await Depot.deleteOne({ _id: id });
+
+    res.json({
+      message: 'Depot deleted successfully',
+      affectedProducts: affectedProducts.length
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // TODO: Add remaining routes:
 // - GET /depots/network/metrics
 // - PUT /depots/:id
-// - DELETE /depots/:id
 // Extract from server.js
 
 module.exports = router;

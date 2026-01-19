@@ -158,6 +158,11 @@ export const api = {
         return response.data;
     },
 
+    deleteDepot: async (depotId) => {
+        const response = await nodeApi.delete(`/depots/${depotId}`);
+        return response.data;
+    },
+
     // Python AI Backend
     predictCustom: async (data) => {
         const response = await pythonApi.post('/predict/custom', data);
@@ -209,6 +214,32 @@ export const api = {
 
     deleteReport: async (reportId) => {
         const response = await nodeApi.delete(`/reports/${reportId}`);
+        return response.data;
+    },
+
+    // Alerts/Notifications
+    getAlerts: async (params) => {
+        const response = await nodeApi.get('/alerts', { params });
+        return response.data;
+    },
+
+    getUnreadCount: async () => {
+        const response = await nodeApi.get('/alerts/unread/count');
+        return response.data;
+    },
+
+    markAlertAsRead: async (alertId) => {
+        const response = await nodeApi.patch(`/alerts/${alertId}/read`);
+        return response.data;
+    },
+
+    markAllAlertsAsRead: async () => {
+        const response = await nodeApi.patch('/alerts/mark-all-read');
+        return response.data;
+    },
+
+    deleteAlert: async (alertId) => {
+        const response = await nodeApi.delete(`/alerts/${alertId}`);
         return response.data;
     }
 };

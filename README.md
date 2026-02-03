@@ -680,8 +680,8 @@ Contributions are welcome! Please follow these steps:
 ## 📧 Contact
 
 For questions or support, please contact:
-- **Email**: your-email@example.com
-- **GitHub**: [@yourusername](https://github.com/yourusername)
+- **Email**: sparth7972@gmail.com
+- **GitHub**: [@ShewaleParth](https://github.com/ShewaleParth)
 
 ---
 

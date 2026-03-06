@@ -15,14 +15,13 @@ from bson import ObjectId
 import traceback
 import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__))))
-from supplier_intelligence.supplier_routes import supplier_routes
+from supplier_intelligence.supplier_routes import supplier_routes, init_db
 
 warnings.filterwarnings('ignore', category=ConvergenceWarning)
 warnings.filterwarnings('ignore', category=FutureWarning)
 
 # Load environment variables
 from dotenv import load_dotenv
-import os
 
 # Try multiple locations for .env to ensures we sync with server.js
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -35,14 +34,20 @@ for path in env_paths:
     if os.path.exists(path):
         load_dotenv(path)
         print(f" Loaded environment from {path}")
+        break  # Use the first found .env — subsequent loads would be no-ops anyway
 
 app = Flask(__name__)
 # Allow CORS for all domains in development, or restrict based on env
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # MongoDB Configuration
-# Try environment first, fallback to known atlas URI
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://luckyak619_db_user:luckyak619@cluster0.lcmjwhw.mongodb.net/sangrahak?retryWrites=true&w=majority&appName=Cluster0")
+# Require MONGODB_URI from environment — never hardcode credentials in source
+MONGODB_URI = os.getenv("MONGODB_URI")
+if not MONGODB_URI:
+    raise EnvironmentError(
+        "MONGODB_URI environment variable is not set. "
+        "Please configure your .env file before starting the server."
+    )
 client = MongoClient(MONGODB_URI)
 db = client.get_database() # Uses database name from URI or defaults
 if not db.name or db.name == 'test':
@@ -145,7 +150,7 @@ def preprocess_data(df):
 
 def predict_stock_status(X_test):
     """Predict stock status and priority"""
-      # FALLBACK if model is not loaded
+    # FALLBACK if model is not loaded
     if ml_model is None:
         print(" Using fallback rule-based prediction (Models not loaded)")
         current_stock = X_test['current_stock'].iloc[0]
@@ -180,6 +185,9 @@ def predict_stock_status(X_test):
     
     if isinstance(y_pred_numeric, np.ndarray):
         if y_pred_numeric.ndim == 1:
+            # WARNING: Model returned a single 1D output — both columns will share the same values.
+            # This likely means the model only predicts one target. Verify model output format.
+            print(" Warning: Model returned 1D output; stock_status_pred and priority_pred will be identical.")
             y_pred = pd.DataFrame({
                 "stock_status_pred": y_pred_numeric,
                 "priority_pred": y_pred_numeric
@@ -444,7 +452,7 @@ def generate_alerts(row, forecast_sales_data=None, initial_stock=0):
             else:
                 insights["eta_days"] = 999
         else:
-            insights["eta_days"] = eta
+            insights["eta_days"] = round(eta, 1)
             
         # Decision Logic
         if current_stock <= 0:
@@ -557,8 +565,6 @@ def get_available_products():
 
         return jsonify({
             "success": True,
-            "products": products,
-            "count": len(products),
             "products": processed_products,
             "count": len(processed_products)
         })
@@ -585,7 +591,12 @@ def predict_custom():
         sku = data.get('sku')
         product_name = data.get('productName')
         user_id_str = data.get('userId')
-        user_id = ObjectId(user_id_str) if user_id_str else None
+        user_id = None
+        if user_id_str:
+            try:
+                user_id = ObjectId(user_id_str)
+            except Exception:
+                return jsonify({"success": False, "error": "Invalid userId format — must be a valid 24-character hex ObjectId"}), 400
         current_stock = float(data.get('currentStock', 0))
         daily_sales = float(data.get('dailySales', 0))
         weekly_sales = float(data.get('weeklySales', 0))
@@ -647,13 +658,7 @@ def predict_custom():
         )
         
         # Log which method was used
-        # print(f" Forecast method used: {forecast_metadata['method']}")
-        if forecast_metadata['arima_used']:
-            pass
-            # print(f" ARIMA model successfully trained and used")
-        else:
-            pass
-            # print(f" Fallback method used instead of ARIMA")
+        print(f" Forecast method used: {forecast_metadata['method']}")
         
         # Generate alerts
         row_data = {
@@ -738,7 +743,7 @@ def scenario_planning():
     
     try:
         data = request.json
-        print(f"🎯 Received scenario planning request: {data}")
+        print(f" Received scenario planning request: {data}")
         
         # Extract baseline data
         sku = data.get('sku')
@@ -772,17 +777,15 @@ def scenario_planning():
                 "error": "Daily sales must be greater than 0"
             }), 400
         
-        print(f"📊 Scenario: Demand x{demand_multiplier}, Lead Time {lead_time_delta:+d} days, Stock {stock_delta:+d} units")
+        print(f"Scenario: Demand x{demand_multiplier}, Lead Time {lead_time_delta:+d} days, Stock {stock_delta:+d} units")
         
         # === BASELINE FORECAST ===
-        print("🔵 Generating BASELINE forecast...")
+        print(" Generating BASELINE forecast...")
         baseline_future_sales, baseline_metadata = forecast_with_arima(
             daily_sales=baseline['dailySales'],
             weekly_sales=baseline['weeklySales'],
             steps=forecast_days
         )
-        
-        baseline_forecast_data = generate_forecast_data(baseline_future_sales, datetime.now().strftime('%Y-%m-%d'))
         
         # Calculate baseline insights
         baseline_insights = generate_alerts({
@@ -791,7 +794,7 @@ def scenario_planning():
         }, forecast_sales_data=baseline_future_sales, initial_stock=baseline['currentStock'])
         
         # === SCENARIO FORECAST ===
-        print(f"🟢 Generating SCENARIO forecast with adjustments...")
+        print(f"Generating SCENARIO forecast with adjustments...")
         scenario_daily_sales = baseline['dailySales'] * demand_multiplier * sales_spike
         scenario_weekly_sales = baseline['weeklySales'] * demand_multiplier * sales_spike
         scenario_current_stock = baseline['currentStock'] + stock_delta
@@ -826,14 +829,15 @@ def scenario_planning():
         if lead_time_delta > 0:
             ai_situation += f"Supply chain delays of {lead_time_delta} days are exacerbating stock pressure."
         
-        if scenario_insights['eta_days'] < scenario_lead_time:
-            ai_risk = f"CRITICAL: Stock exhaustion predicted in {scenario_insights['eta_days']} days, which is less than your {scenario_lead_time}-day lead time. A stock-out is highly likely."
+        eta_days = scenario_insights.get('eta_days')
+        if eta_days is not None and eta_days < scenario_lead_time:
+            ai_risk = f"CRITICAL: Stock exhaustion predicted in {eta_days} days, which is less than your {scenario_lead_time}-day lead time. A stock-out is highly likely."
             ai_action = f"Immediate reorder of {scenario_insights['recommended_reorder']} units required to minimize service interruption."
-        elif scenario_insights['eta_days'] < 30:
-            ai_risk = f"WARNING: Stock will reach critical levels in {scenario_insights['eta_days']} days. Current buffers may not be sufficient for the simulated demand spike."
+        elif eta_days is not None and eta_days < 30:
+            ai_risk = f"WARNING: Stock will reach critical levels in {eta_days} days. Current buffers may not be sufficient for the simulated demand spike."
             ai_action = f"Place a proactive order of {scenario_insights['recommended_reorder']} units within the next 48 hours."
         else:
-            ai_risk = f"Information: Current inventory and simulated restocks provide a {scenario_insights['eta_days']}-day safety window."
+            ai_risk = f"Information: Current inventory and simulated restocks provide a {eta_days if eta_days is not None else 'N/A'}-day safety window."
             ai_action = "Maintain regular monitoring. No immediate emergency action required."
 
         # Build response
@@ -882,12 +886,12 @@ def scenario_planning():
             }
         }
         
-        print(f"✅ Scenario planning complete. Demand change: {demand_change_percent:+.1f}%")
+        print(f" Scenario planning complete. Demand change: {demand_change_percent:+.1f}%")
         
         return jsonify(response)
     
     except Exception as e:
-        print(f"❌ Error in scenario planning: {e}")
+        print(f" Error in scenario planning: {e}")
         traceback.print_exc()
         return jsonify({
             "success": False,
@@ -910,6 +914,11 @@ def model_status():
 @app.route('/api/ml/forecast/<sku>', methods=['GET'])
 def get_forecast_by_sku(sku):
     """Fetch stored forecast or generate a fresh one for the modal"""
+    # Sanitize SKU: only allow alphanumeric characters, hyphens, and underscores
+    import re
+    if not re.match(r'^[a-zA-Z0-9_\-]{1,64}$', sku):
+        return jsonify({"success": False, "error": "Invalid SKU format"}), 400
+
     try:
         # 1. Check if we already have a fresh forecast in DB
         # Only use it if it's less than 24 hours old
@@ -992,17 +1001,20 @@ def get_forecast_by_sku(sku):
 
 
 # Register Supplier Intelligence Routes
+# Pass the MongoDB db so supplier routes can read live products data
+init_db(db)
 app.register_blueprint(supplier_routes, url_prefix='/api/supplier')
 
 
 if __name__ == '__main__':
     print("Starting ML Prediction API...")
-    
+
     if load_models():
         print(" All models loaded successfully")
-        print(" API running on http://localhost:5001")
-        print(" CORS enabled for http://localhost:5173")
-        # use_reloader=False fixes WinError 10038 on Windows
-        app.run(debug=True, port=5001, host='0.0.0.0', use_reloader=False)
     else:
-        print(" Failed to load models. Please check model paths.")
+        print(" Warning: One or more models could not be loaded. Rule-based fallback prediction will be used.")
+
+    print(" API running on http://localhost:5001")
+    print(" CORS enabled for all origins (*)")
+    # use_reloader=False fixes WinError 10038 on Windows
+    app.run(debug=True, port=5001, host='0.0.0.0', use_reloader=False)

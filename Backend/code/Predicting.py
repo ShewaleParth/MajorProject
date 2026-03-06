@@ -13,20 +13,20 @@ client = MongoClient(MONGODB_URI)
 db = client['inventroops']
 forecasts_collection = db['forecasts']
 # ----------------------------
-# 0️⃣ Setup Paths
+# 0️ Setup Paths
 # ----------------------------
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODELS_DIR = os.path.join(os.path.dirname(BASE_PATH), "Models")
 DATA_DIR = os.path.join(BASE_PATH, "Combined csv alert") # Updated to match common folder naming
 
 # ----------------------------
-# 1️⃣ Load new input-only test dataset
+# 1️ Load new input-only test dataset
 # ----------------------------
 csv_path = os.path.join(DATA_DIR, "new_test_inventory_input_only.csv")
 if os.path.exists(csv_path):
     df_test = pd.read_csv(csv_path)
 else:
-    print(f"⚠️ Warning: Dataset not found at {csv_path}. Creating a dummy entry for testing.")
+    print(f" Warning: Dataset not found at {csv_path}. Creating a dummy entry for testing.")
     df_test = pd.DataFrame([{
         'item_id': 'PRD001',
         'product_name': 'Sample Product',
@@ -44,7 +44,7 @@ else:
     }])
 
 # ----------------------------
-# 2️⃣ Load saved models (JSON preferred, fallback to PKL)
+# 2️ Load saved models (JSON preferred, fallback to PKL)
 # ----------------------------
 ml_model = None
 use_xgb_native = False
@@ -59,14 +59,14 @@ if os.path.exists(json_model_path):
         ml_model = xgb.Booster()
         ml_model.load_model(json_model_path)
         use_xgb_native = True
-        print("✅ Loaded ML model from JSON")
+        print(" Loaded ML model from JSON")
     except Exception as e:
-        print(f"⚠️ Failed to load JSON model, falling back to PKL. Error: {e}")
+        print(f"Failed to load JSON model, falling back to PKL. Error: {e}")
 
 if ml_model is None and os.path.exists(pkl_model_path):
     ml_model = joblib.load(pkl_model_path)
     use_xgb_native = False
-    print("✅ Loaded ML model from Pickle (.pkl)")
+    print("Loaded ML model from Pickle (.pkl)")
 
 # Load encoders & ARIMA models
 target_encoders = joblib.load(encoders_path) if os.path.exists(encoders_path) else {}
@@ -74,7 +74,7 @@ target_encoders = joblib.load(encoders_path) if os.path.exists(encoders_path) el
 arima_models = {} # joblib.load(arima_path) if os.path.exists(arima_path) else {}
 
 # ----------------------------
-# 3️⃣ Preprocess categorical features safely
+# 3️ Preprocess categorical features safely
 # ----------------------------
 features = [
     "current_stock",
@@ -113,7 +113,7 @@ for col in categorical:
     features.append(col)
 
 # ----------------------------
-# 4️⃣ Predict Stock Status + Priority (ML)
+# 4️ Predict Stock Status + Priority (ML)
 # ----------------------------
 X_test = df_test[features]
 
@@ -128,7 +128,7 @@ else:
 # Handle model output shape safely
 if isinstance(y_pred_numeric, np.ndarray):
     if y_pred_numeric.ndim == 1:
-        print("⚠️ Model output is 1D. Creating duplicate predictions.")
+        print(" Model output is 1D. Creating duplicate predictions.")
         y_pred = pd.DataFrame({
             "stock_status_pred": y_pred_numeric,
             "priority_pred": y_pred_numeric
@@ -149,18 +149,18 @@ for col in ["stock_status_pred", "priority_pred"]:
         encoder = target_encoders[encoder_key]
         try:
             y_pred[col] = encoder.inverse_transform(y_pred[col].astype(int))
-            print(f"✅ Decoded {col} successfully")
+            print(f" Decoded {col} successfully")
         except (ValueError, KeyError) as e:
-            print(f"⚠️ Could not decode {col}: {e}. Using 'Unknown'")
+            print(f" Could not decode {col}: {e}. Using 'Unknown'")
             y_pred[col] = "Unknown"
     else:
-        print(f"⚠️ No encoder found for {encoder_key}")
+        print(f" No encoder found for {encoder_key}")
 
 df_test["stock_status_pred"] = y_pred["stock_status_pred"]
 df_test["priority_pred"] = y_pred["priority_pred"]
 
 # ----------------------------
-# 5️⃣ Forecast Future Sales (ARIMA)
+# 5️ Forecast Future Sales (ARIMA)
 # ----------------------------
 def forecast_sales(item_id, steps=30):
     if item_id in arima_models:
@@ -175,7 +175,7 @@ def forecast_sales(item_id, steps=30):
     return forecast
 
 # ----------------------------
-# 6️⃣ Generate Combined Alerts
+# 6️ Generate Combined Alerts
 # ----------------------------
 def generate_alerts(row, forecast_sales=None):
     alerts = []
@@ -199,7 +199,7 @@ def generate_alerts(row, forecast_sales=None):
     return "; ".join(alerts)
 
 # ----------------------------
-# 7️⃣ Apply alerts for latest day of each item
+# 7️ Apply alerts for latest day of each item
 # ----------------------------
 alert_list = []
 for item_id in df_test["item_id"].unique():
@@ -225,7 +225,7 @@ os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
 # Save the alerts
 alerts_df.to_csv(output_path, index=False)
-print(f"✅ Alerts generated and saved to: {output_path}")
-print(f"📊 Total alerts generated: {len(alerts_df)}")
+print(f"Alerts generated and saved to: {output_path}")
+print(f"Total alerts generated: {len(alerts_df)}")
 print("\nSample alerts:")
 print(alerts_df.head())

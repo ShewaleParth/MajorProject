@@ -13,16 +13,16 @@ const initializeEmailService = () => {
         pass: config.EMAIL_PASS
       }
     });
-    console.log('✅ Email service initialized');
+    console.log(' Email service initialized');
   } else {
-    console.log('⚠️  Email credentials not configured. Email functionality will be disabled.');
+    console.log(' Email credentials not configured. Email functionality will be disabled.');
   }
 };
 
 // Send email
 const sendEmail = async (to, subject, html) => {
   if (!transporter) {
-    console.log(`📧 Email not sent (service not configured): ${subject} to ${to}`);
+    console.log(` Email not sent (service not configured): ${subject} to ${to}`);
     return { success: false, message: 'Email service not configured' };
   }
 
@@ -33,10 +33,10 @@ const sendEmail = async (to, subject, html) => {
       subject,
       html
     });
-    console.log(`✅ Email sent: ${subject} to ${to}`);
+    console.log(`Email sent: ${subject} to ${to}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('❌ Email send failed:', error.message);
+    console.error(' Email send failed:', error.message);
     return { success: false, error: error.message };
   }
 };

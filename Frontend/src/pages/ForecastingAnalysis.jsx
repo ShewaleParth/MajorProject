@@ -39,11 +39,21 @@ const ForecastingAnalysis = () => {
         try {
             setLoading(true);
             const data = await riskApi.getRiskOverview();
+
+            // 🔍 DEBUG LOGS
+            console.log('🔍 Risk API Response:', data);
+            console.log('📊 Suppliers Array:', data.suppliers);
+            if (data.suppliers && data.suppliers.length > 0) {
+                console.log('📈 First Supplier:', data.suppliers[0]);
+                console.log('🎯 Risk Score:', data.suppliers[0].risk_score);
+                console.log('⚠️ Risk Level:', data.suppliers[0].risk_level);
+            }
+
             if (data.success) {
                 setSuppliers(data.suppliers);
             }
         } catch (error) {
-            console.error("Error loading suppliers");
+            console.error("❌ Error loading suppliers:", error);
         } finally {
             setLoading(false);
         }
@@ -64,6 +74,34 @@ const ForecastingAnalysis = () => {
             else counts.stable++;
         });
         return counts;
+    }, [suppliers]);
+
+    // KPIs computed from live supplier data
+    const kpis = useMemo(() => {
+        if (suppliers.length === 0) return { riskEvents: 0, avgDelay: '0.0', qualityFail: '0.0', lossRisk: '0.0' };
+        const riskEvents = suppliers.filter(s => s.risk_score > 30).length;
+        const avgDelay = (suppliers.reduce((sum, s) => sum + (s.avg_delay || 0), 0) / suppliers.length).toFixed(1);
+        const qualityFail = (suppliers.reduce((sum, s) => sum + (s.avg_rejection || 0), 0) / suppliers.length).toFixed(1);
+        const highRiskCount = suppliers.filter(s => s.risk_level === 'High').length;
+        const lossLakh = ((highRiskCount * 0.4) + (riskEvents * 0.1)).toFixed(1);
+        return { riskEvents, avgDelay, qualityFail, lossRisk: lossLakh };
+    }, [suppliers]);
+
+    // Live alerts built from real high-risk suppliers
+    const liveAlerts = useMemo(() => {
+        const alerts = [];
+        const sorted = [...suppliers].sort((a, b) => b.risk_score - a.risk_score);
+        sorted.forEach(s => {
+            if (s.risk_score > 60)
+                alerts.push({ type: 'critical', text: `${s.supplier} – Delay probability ${s.avg_delay > 5 ? 'crossed 70%' : 'elevated at ' + Math.round(s.avg_delay * 10) + '%'}`, meta: `Risk Score ${s.risk_score} • Critical` });
+            else if (s.risk_score > 35)
+                alerts.push({ type: 'warning', text: `${s.supplier} – Quality rejection at ${s.avg_rejection}%`, meta: `${s.category} • Warning` });
+            else if (s.risk_score <= 20)
+                alerts.push({ type: 'success', text: `${s.supplier} stabilized fulfillment to ${s.avg_fulfillment}%`, meta: 'Positive Trend' });
+        });
+        if (sorted.length > 0)
+            alerts.push({ type: 'info', text: `Suggested review pricing with ${sorted[sorted.length - 1].supplier}`, meta: 'Strategic Insight' });
+        return alerts.slice(0, 4);
     }, [suppliers]);
 
     const getScoreColor = (score) => {
@@ -116,23 +154,23 @@ const ForecastingAnalysis = () => {
                 </div>
             </header>
 
-            {/* 2. KPI row */}
+            {/* 2. KPI row — all values from real supplier data */}
             <div className="kpi-row">
                 <div className="kpi-card-v2">
                     <span className="label">Active Risk Events</span>
-                    <div className="value" style={{ color: '#ef4444' }}>9</div>
+                    <div className="value" style={{ color: kpis.riskEvents > 0 ? '#ef4444' : '#10b981' }}>{kpis.riskEvents}</div>
                 </div>
                 <div className="kpi-card-v2">
                     <span className="label">Avg Delivery Delay</span>
-                    <div className="value">2.4 Days</div>
+                    <div className="value">{kpis.avgDelay} Days</div>
                 </div>
                 <div className="kpi-card-v2">
                     <span className="label">Quality Failures</span>
-                    <div className="value" style={{ color: '#f59e0b' }}>18%</div>
+                    <div className="value" style={{ color: parseFloat(kpis.qualityFail) > 10 ? '#ef4444' : parseFloat(kpis.qualityFail) > 5 ? '#f59e0b' : '#10b981' }}>{kpis.qualityFail}%</div>
                 </div>
                 <div className="kpi-card-v2">
                     <span className="label">Procurement Loss Risk</span>
-                    <div className="value">₹3.7L</div>
+                    <div className="value">₹{kpis.lossRisk}L</div>
                 </div>
             </div>
 
@@ -154,7 +192,8 @@ const ForecastingAnalysis = () => {
                             </div>
                         </div>
                         <div className="table-tracking-info">
-                            Currently tracking {suppliers.length} active suppliers across 6 regions
+                            Currently tracking {suppliers.length} active supplier{suppliers.length !== 1 ? 's' : ''}
+                            {suppliers.length > 0 && ` across ${[...new Set(suppliers.map(s => s.category))].length} categories`}
                         </div>
                     </div>
 
@@ -213,52 +252,39 @@ const ForecastingAnalysis = () => {
                     </div>
                 </div>
 
-                {/* AI Ops Feed Side */}
+                {/* AI Ops Feed — dynamic alerts from real supplier data */}
                 <aside className="ai-ops-feed">
                     <div className="feed-header">
                         <BrainCircuit size={20} className="text-primary" />
                         Live Alerts Panel
                     </div>
 
-                    <div className="alert-item pulse-red">
-                        <div className="alert-icon" style={{ backgroundColor: '#fee2e2', color: '#ef4444' }}>
-                            <AlertCircle size={18} />
+                    {liveAlerts.length === 0 && (
+                        <div className="alert-item">
+                            <div className="alert-icon" style={{ backgroundColor: '#d1fae5', color: '#10b981' }}>
+                                <CheckCircle size={18} />
+                            </div>
+                            <div className="alert-content">
+                                <div className="alert-text">All suppliers within safe thresholds</div>
+                                <div className="alert-meta">No active alerts</div>
+                            </div>
                         </div>
-                        <div className="alert-content">
-                            <div className="alert-text">Alpha Parts – Delay probability crossed 70%</div>
-                            <div className="alert-meta">2 mins ago • Critical</div>
-                        </div>
-                    </div>
+                    )}
 
-                    <div className="alert-item">
-                        <div className="alert-icon" style={{ backgroundColor: '#ffedd5', color: '#f59e0b' }}>
-                            <AlertTriangle size={18} />
+                    {liveAlerts.map((alert, i) => (
+                        <div key={i} className={`alert-item ${alert.type === 'critical' ? 'pulse-red' : ''}`}>
+                            <div className="alert-icon" style={{
+                                backgroundColor: alert.type === 'critical' ? '#fee2e2' : alert.type === 'warning' ? '#ffedd5' : alert.type === 'success' ? '#d1fae5' : '#dbeafe',
+                                color: alert.type === 'critical' ? '#ef4444' : alert.type === 'warning' ? '#f59e0b' : alert.type === 'success' ? '#10b981' : '#3b82f6'
+                            }}>
+                                {alert.type === 'critical' ? <AlertCircle size={18} /> : alert.type === 'warning' ? <AlertTriangle size={18} /> : alert.type === 'success' ? <CheckCircle size={18} /> : <BrainCircuit size={18} />}
+                            </div>
+                            <div className="alert-content">
+                                <div className="alert-text">{alert.text}</div>
+                                <div className="alert-meta">{alert.meta}</div>
+                            </div>
                         </div>
-                        <div className="alert-content">
-                            <div className="alert-text">Nova Logistics – Quality rejection rising rapidly</div>
-                            <div className="alert-meta">15 mins ago • Warning</div>
-                        </div>
-                    </div>
-
-                    <div className="alert-item">
-                        <div className="alert-icon" style={{ backgroundColor: '#dbeafe', color: '#3b82f6' }}>
-                            <BrainCircuit size={18} />
-                        </div>
-                        <div className="alert-content">
-                            <div className="alert-text">Suggested negotiating price with Delta Corp</div>
-                            <div className="alert-meta">Strategic Insight</div>
-                        </div>
-                    </div>
-
-                    <div className="alert-item">
-                        <div className="alert-icon" style={{ backgroundColor: '#d1fae5', color: '#10b981' }}>
-                            <CheckCircle size={18} />
-                        </div>
-                        <div className="alert-content">
-                            <div className="alert-text">Apex Logistics stabilized fulfillment to 98%</div>
-                            <div className="alert-meta">Positive Trend</div>
-                        </div>
-                    </div>
+                    ))}
                 </aside>
             </div>
 
@@ -314,8 +340,10 @@ const ForecastingAnalysis = () => {
                                             <div className="value">{selectedSupplier.avg_fulfillment}%</div>
                                         </div>
                                         <div className="kpi-card-v2 w-full">
-                                            <span className="label">Performance Delta</span>
-                                            <div className="value text-danger">-12%</div>
+                                            <span className="label">Avg Lead Time</span>
+                                            <div className="value" style={{ color: selectedSupplier.avg_delay > 5 ? '#ef4444' : '#10b981' }}>
+                                                {selectedSupplier.avg_delay}d
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -324,15 +352,23 @@ const ForecastingAnalysis = () => {
                                     <h3 className="font-black text-lg mb-4">AI Explanation</h3>
 
                                     <div className="ai-reason-bubble">
-                                        “Delay probability increased due to repeated payment lags in regional transit hobs during Q2 peak cycles.”
+                                        {selectedSupplier.avg_delay > 5
+                                            ? `"Avg delivery delay of ${selectedSupplier.avg_delay} days detected. Supplier exceeds the safe 5-day threshold."`
+                                            : `"Delivery delay within safe range at ${selectedSupplier.avg_delay} days. No delay risk detected."`}
                                     </div>
 
-                                    <div className="ai-reason-bubble" style={{ borderColor: '#ef4444' }}>
-                                        “Fulfilment reliability dropped 18% in last 30 days. Multiple split-shipments recorded.”
+                                    <div className="ai-reason-bubble" style={{ borderColor: selectedSupplier.avg_rejection > 10 ? '#ef4444' : '#10b981' }}>
+                                        {selectedSupplier.avg_rejection > 10
+                                            ? `"Quality rejection rate of ${selectedSupplier.avg_rejection}% exceeds 10% alert threshold. Inspect incoming batches."`
+                                            : `"Fulfilment reliability at ${selectedSupplier.avg_fulfillment}%. Quality is within acceptable range."`}
                                     </div>
 
                                     <div className="ai-reason-bubble" style={{ borderColor: '#10b981' }}>
-                                        “Recommendation: Pivot 20% order volume to Beta Corp to mitigate Q3 risk exposure.”
+                                        {selectedSupplier.risk_level === 'High'
+                                            ? `"Recommendation: Reduce orders from ${selectedSupplier.supplier} by 20-30% and explore alternate ${selectedSupplier.category} vendors."`
+                                            : selectedSupplier.risk_level === 'Medium'
+                                                ? `"Monitor ${selectedSupplier.supplier} closely. Diversify ${selectedSupplier.category} sourcing if delays persist."`
+                                                : `"${selectedSupplier.supplier} is a reliable vendor. Consider increasing ${selectedSupplier.category} order volume."`}
                                     </div>
 
                                     <button

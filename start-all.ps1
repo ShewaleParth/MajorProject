@@ -1,4 +1,7 @@
 # Quick Start - All Servers
+$PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
+Set-Location $PSScriptRoot
+
 Write-Host "=======================================" -ForegroundColor Cyan
 Write-Host "  AI Revenue Protection - Quick Start  " -ForegroundColor Cyan
 Write-Host "=======================================" -ForegroundColor Cyan
@@ -10,19 +13,21 @@ taskkill /F /IM python.exe 2>$null | Out-Null
 Start-Sleep -Seconds 1
 
 Write-Host "Starting AI Server..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd 'd:\Major\Backend\code'; python app.py"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\Backend\code'; python app.py"
 
 Start-Sleep -Seconds 2
 
-Write-Host "Starting Node.js Server..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd 'd:\Major\Backend\server'; node server.js"
+Write-Host "Starting Node.js Server (Modular)..." -ForegroundColor Green
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\Backend\server'; node server.js"
 
 Start-Sleep -Seconds 2
 
 Write-Host "Starting Frontend..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd 'd:\Major\Frontend'; npm run dev"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\Frontend'; npm run dev"
 
 Write-Host ""
 Write-Host "All servers started!" -ForegroundColor Green
 Write-Host "Frontend: http://localhost:5173" -ForegroundColor Cyan
+Write-Host "Node API: http://localhost:5000/api/health" -ForegroundColor Cyan
+Write-Host "AI API: http://localhost:5001/api/health" -ForegroundColor Cyan
 Write-Host ""

@@ -995,7 +995,7 @@ def chat_with_ai(user_message: str, session_id: str = "default"):
                 )
                 assistant_message = final_response.choices[0].message
             except Exception as final_error:
-                print(f"❌ Error getting final response: {final_error}")
+                print(f" Error getting final response: {final_error}")
                 # Use function response directly
                 assistant_message.content = f"I executed the function but encountered an error getting the final response: {str(final_error)}"
         
@@ -1016,7 +1016,7 @@ def chat_with_ai(user_message: str, session_id: str = "default"):
         }
         
     except Exception as e:
-        print(f"❌ Error in chat_with_ai: {e}")
+        print(f" Error in chat_with_ai: {e}")
         import traceback
         traceback.print_exc()
         return {
@@ -1044,16 +1044,16 @@ def chat():
                 "error": "Message is required"
             }), 400
         
-        print(f"💬 User: {user_message}")
+        print(f" User: {user_message}")
         
         response = chat_with_ai(user_message, session_id)
         
-        print(f"🤖 AI: {response.get('message', 'Error')}")
+        print(f" AI: {response.get('message', 'Error')}")
         
         return jsonify(response)
         
     except Exception as e:
-        print(f"❌ Error in /api/ai/chat: {e}")
+        print(f" Error in /api/ai/chat: {e}")
         return jsonify({
             "success": False,
             "error": str(e)
@@ -1094,9 +1094,9 @@ def health():
 
 
 if __name__ == '__main__':
-    print("🤖 Starting AI Inventory Assistant...")
-    print("📡 Model: Llama 3.3 70B (via Groq)")
-    print("🔧 Tools: 7 inventory management functions")
-    print("🚀 Running on http://localhost:5002")
+    print(" Starting AI Inventory Assistant...")
+    print(" Model: Llama 3.3 70B (via Groq)")
+    print(" Tools: 7 inventory management functions")
+    print(" Running on http://localhost:5002")
     
     app.run(debug=True, port=5002, host='0.0.0.0')

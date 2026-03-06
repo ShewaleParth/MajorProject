@@ -21,7 +21,7 @@ const validateEnv = () => {
   });
 
   if (missing.length > 0) {
-    console.error('❌ Missing required environment variables:');
+    console.error(' Missing required environment variables:');
     missing.forEach(varName => console.error(`   - ${varName}`));
     process.exit(1);
   }
@@ -29,22 +29,22 @@ const validateEnv = () => {
   // Warn about optional but important variables
   optionalEnvVars.forEach(varName => {
     if (!process.env[varName]) {
-      console.warn(`⚠️  Optional environment variable not set: ${varName}`);
+      console.warn(`  Optional environment variable not set: ${varName}`);
     }
   });
 
   // Validate JWT_SECRET strength if provided
   if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
-    console.warn('⚠️  JWT_SECRET should be at least 32 characters long for security');
+    console.warn('  JWT_SECRET should be at least 32 characters long for security');
   }
 
   // Set default JWT_SECRET if not provided (development only)
   if (!process.env.JWT_SECRET) {
     if (process.env.NODE_ENV === 'production') {
-      console.error('❌ JWT_SECRET is required in production');
+      console.error(' JWT_SECRET is required in production');
       process.exit(1);
     } else {
-      console.warn('⚠️  Using default JWT_SECRET for development. Set JWT_SECRET in .env for production!');
+      console.warn('  Using default JWT_SECRET for development. Set JWT_SECRET in .env for production!');
     }
   }
 };

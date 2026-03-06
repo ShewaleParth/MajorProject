@@ -30,10 +30,10 @@ try {
     }
   });
 
-  console.log('✅ Bull queue initialized');
+  console.log(' Bull queue initialized');
 } catch (error) {
-  console.log('⚠️  Bull queue not available (Redis not connected)');
-  console.log('💡 Reports will be processed synchronously');
+  console.log('  Bull queue not available (Redis not connected)');
+  console.log(' Reports will be processed synchronously');
 }
 
 
@@ -42,7 +42,7 @@ if (reportQueue) {
   reportQueue.process(async (job) => {
     const { reportId, userId, reportType, targetId } = job.data;
     
-    console.log(`📊 Processing report: ${reportId} (${reportType})`);
+    console.log(` Processing report: ${reportId} (${reportType})`);
 
     try {
       // Update status to processing
@@ -79,7 +79,7 @@ if (reportQueue) {
 
         await Report.findByIdAndUpdate(reportId, { progress: 40 });
 
-        console.log(`🤖 Generating AI analysis for depot: ${depotData.name}`);
+        console.log(` Generating AI analysis for depot: ${depotData.name}`);
         
         // AI Analysis
         aiAnalysis = await aiReportService.analyzeDepotData(
@@ -90,7 +90,7 @@ if (reportQueue) {
 
         await Report.findByIdAndUpdate(reportId, { progress: 70 });
 
-        console.log(`📄 Generating PDF report...`);
+        console.log(` Generating PDF report...`);
         
         // Generate PDF
         pdfResult = await pdfGenerator.generateDepotReport(
@@ -165,7 +165,7 @@ if (reportQueue) {
         { new: true }
       );
 
-      console.log(`✅ Report completed: ${reportId}`);
+      console.log(` Report completed: ${reportId}`);
 
       return { 
         success: true, 
@@ -174,7 +174,7 @@ if (reportQueue) {
       };
 
     } catch (error) {
-      console.error(`❌ Report generation failed:`, error);
+      console.error(` Report generation failed:`, error);
       
       await Report.findByIdAndUpdate(reportId, {
         status: 'failed',
@@ -188,15 +188,15 @@ if (reportQueue) {
 
   // Event listeners
   reportQueue.on('completed', (job, result) => {
-    console.log(`✅ Job ${job.id} completed:`, result);
+    console.log(` Job ${job.id} completed:`, result);
   });
 
   reportQueue.on('failed', (job, err) => {
-    console.error(`❌ Job ${job.id} failed:`, err.message);
+    console.error(` Job ${job.id} failed:`, err.message);
   });
 
   reportQueue.on('active', (job) => {
-    console.log(`🔄 Job ${job.id} started processing`);
+    console.log(` Job ${job.id} started processing`);
   });
 }
 

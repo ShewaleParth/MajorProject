@@ -11,7 +11,7 @@ class PDFGenerator {
   ensureReportsDirectory() {
     if (!fs.existsSync(this.reportsDir)) {
       fs.mkdirSync(this.reportsDir, { recursive: true });
-      console.log('📁 Reports directory created:', this.reportsDir);
+      console.log(' Reports directory created:', this.reportsDir);
     }
   }
 
@@ -101,7 +101,7 @@ class PDFGenerator {
     // Location
     doc.fontSize(14)
        .fillColor('#c7d2fe')
-       .text(`📍 ${depotData.location}`, 50, 200, { align: 'center' });
+       .text(` ${depotData.location}`, 50, 200, { align: 'center' });
     
     // Generated date
     doc.fontSize(12)
@@ -111,7 +111,7 @@ class PDFGenerator {
     // AI Badge
     doc.fontSize(10)
        .fillColor('#fef3c7')
-       .text('🤖 AI-POWERED ANALYSIS', 50, 270, { align: 'center' });
+       .text(' AI-POWERED ANALYSIS', 50, 270, { align: 'center' });
   }
 
   /**
@@ -120,7 +120,7 @@ class PDFGenerator {
   addAIExecutiveSummary(doc, aiAnalysis) {
     doc.fontSize(22)
        .fillColor('#667eea')
-       .text('🤖 AI Executive Summary', { underline: true });
+       .text(' AI Executive Summary', { underline: true });
     
     doc.moveDown(1);
     
@@ -143,7 +143,7 @@ class PDFGenerator {
     if (aiAnalysis.metrics) {
       doc.fontSize(16)
          .fillColor('#667eea')
-         .text('📊 Performance Metrics');
+         .text(' Performance Metrics');
       
       doc.moveDown(0.5);
       
@@ -176,7 +176,7 @@ class PDFGenerator {
   addDepotOverview(doc, depotData, products, transactions) {
     doc.fontSize(20)
        .fillColor('#667eea')
-       .text('📦 Depot Overview', { underline: true });
+       .text(' Depot Overview', { underline: true });
     
     doc.moveDown(1);
     
@@ -233,7 +233,7 @@ class PDFGenerator {
     // Key Insights
     doc.fontSize(20)
        .fillColor('#667eea')
-       .text('💡 Key Insights', { underline: true });
+       .text(' Key Insights', { underline: true });
     
     doc.moveDown(0.5);
     
@@ -252,7 +252,7 @@ class PDFGenerator {
     doc.moveDown(1);
     doc.fontSize(20)
        .fillColor('#10b981')
-       .text('✅ Recommendations', { underline: true });
+       .text(' Recommendations', { underline: true });
     
     doc.moveDown(0.5);
     
@@ -272,7 +272,7 @@ class PDFGenerator {
       doc.moveDown(1);
       doc.fontSize(20)
          .fillColor('#ef4444')
-         .text('⚠️ Critical Alerts', { underline: true });
+         .text(' Critical Alerts', { underline: true });
       
       doc.moveDown(0.5);
       
@@ -298,7 +298,7 @@ class PDFGenerator {
   addStockAnalysisTable(doc, products) {
     doc.fontSize(20)
        .fillColor('#667eea')
-       .text('📊 Stock Analysis', { underline: true });
+       .text(' Stock Analysis', { underline: true });
     
     doc.moveDown(1);
     
@@ -358,7 +358,7 @@ class PDFGenerator {
   addTransactionTimeline(doc, transactions) {
     doc.fontSize(20)
        .fillColor('#667eea')
-       .text('📈 Transaction Timeline', { underline: true });
+       .text(' Transaction Timeline', { underline: true });
     
     doc.moveDown(1);
     

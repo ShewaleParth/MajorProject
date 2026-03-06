@@ -163,7 +163,7 @@ router.post('/generate', authenticateToken, async (req, res) => {
  */
 async function processReportSync(reportId, userId, reportType, targetId, config, format = 'pdf') {
   try {
-    console.log(`📊 Processing ${reportType} report: ${reportId}`);
+    console.log(` Processing ${reportType} report: ${reportId}`);
 
     // Fetch all necessary data
     const products = await Product.find({ userId }).lean();
@@ -182,7 +182,7 @@ async function processReportSync(reportId, userId, reportType, targetId, config,
       if (!depotData) throw new Error('Depot not found');
     }
 
-    console.log(`🤖 Generating AI analysis for ${reportType}...`);
+    console.log(` Generating AI analysis for ${reportType}...`);
 
     // Data for export mapping
     let dataToExport = products;
@@ -253,7 +253,7 @@ async function processReportSync(reportId, userId, reportType, targetId, config,
 
     await Report.findByIdAndUpdate(reportId, { progress: 70 });
 
-    console.log(`📄 Generating ${format.toUpperCase()} for ${reportType}...`);
+    console.log(` Generating ${format.toUpperCase()} for ${reportType}...`);
 
     // Generate output based on format
     let result;
@@ -312,9 +312,9 @@ async function processReportSync(reportId, userId, reportType, targetId, config,
       progress: 100
     });
 
-    console.log(`✅ Report completed: ${reportId}`);
+    console.log(` Report completed: ${reportId}`);
   } catch (error) {
-    console.error(`❌ Report generation failed:`, error);
+    console.error(` Report generation failed:`, error);
     await Report.findByIdAndUpdate(reportId, {
       status: 'failed',
       error: error.message,

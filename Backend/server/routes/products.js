@@ -14,7 +14,9 @@ const { recalculateDepotMetrics } = require('../utils/depotHelpers');
 // GET all products
 router.get('/', async (req, res, next) => {
   try {
-    const { search, category, status, location, page = 1, limit = 10000 } = req.query;
+    const { search, category, status, location, page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(Math.max(1, parseInt(limit)), 500); // max 500 per page
     const query = { userId: req.userId };
 
     if (location) {
@@ -37,8 +39,8 @@ router.get('/', async (req, res, next) => {
     }
 
     const products = await Product.find(query)
-      .limit(Math.min(limit * 1, 100))
-      .skip((page - 1) * limit)
+      .limit(limitNum)
+      .skip((pageNum - 1) * limitNum)
       .sort({ updatedAt: -1 });
 
     const total = await Product.countDocuments(query);
@@ -93,8 +95,9 @@ router.get('/', async (req, res, next) => {
         };
       }),
       total,
-      pages: Math.ceil(total / limit),
-      currentPage: parseInt(page)
+      pages: Math.ceil(total / limitNum),
+      currentPage: pageNum,
+      limit: limitNum
     });
   } catch (error) {
     next(error);
@@ -208,7 +211,7 @@ router.post('/bulk', async (req, res, next) => {
 
     // Fetch all user's depots
     let userDepots = await Depot.find({ userId });
-    console.log(`✅ Found ${userDepots.length} existing depots`);
+    console.log(` Found ${userDepots.length} existing depots`);
 
     const results = {
       success: 0,
@@ -259,7 +262,7 @@ router.post('/bulk', async (req, res, next) => {
 
           // If not found, CREATE IT
           if (!targetDepot) {
-            console.log(`🏭 Creating new depot: ${depotName}`);
+            console.log(` Creating new depot: ${depotName}`);
             targetDepot = new Depot({
               userId,
               name: depotName,
@@ -282,7 +285,7 @@ router.post('/bulk', async (req, res, next) => {
                 location: targetDepot.location
               });
             }
-            console.log(`✅ Created depot: ${depotName} at ${depotLocation}`);
+            console.log(` Created depot: ${depotName} at ${depotLocation}`);
           }
         }
 
@@ -292,7 +295,7 @@ router.post('/bulk', async (req, res, next) => {
             targetDepot = userDepots[Math.floor(Math.random() * userDepots.length)];
           } else {
             // Create a default depot
-            console.log(`🏭 Creating default depot`);
+            console.log(` Creating default depot`);
             targetDepot = new Depot({
               userId,
               name: 'Main Warehouse',
@@ -421,7 +424,7 @@ router.post('/bulk', async (req, res, next) => {
             }
 
             const assignmentMethod = depotName ? '(CSV specified)' : '(random)';
-            console.log(`📦 Added ${stockToAdd} units of ${sku} to depot: ${targetDepot.name} ${assignmentMethod}`);
+            console.log(` Added ${stockToAdd} units of ${sku} to depot: ${targetDepot.name} ${assignmentMethod}`);
           }
 
           product.updatedAt = new Date();
@@ -516,7 +519,7 @@ router.post('/bulk', async (req, res, next) => {
             }
 
             const assignmentMethod = depotName ? '(CSV specified)' : '(random)';
-            console.log(`✅ Created product ${sku} and assigned to depot: ${targetDepot.name} ${assignmentMethod}`);
+            console.log(` Created product ${sku} and assigned to depot: ${targetDepot.name} ${assignmentMethod}`);
           }
         }
 
@@ -608,7 +611,7 @@ router.post('/bulk-with-transactions', async (req, res, next) => {
             });
             await depot.save();
             results.depotsCreated++;
-            console.log(`✅ Created depot: ${depot.name}`);
+            console.log(` Created depot: ${depot.name}`);
           }
         }
 
@@ -740,12 +743,12 @@ router.post('/bulk-with-transactions', async (req, res, next) => {
         await createStockAlert(product, userId);
         results.success++;
 
-        console.log(`✅ Processed product: ${product.name} (${product.sku}) - Final stock: ${product.stock}`);
+        console.log(` Processed product: ${product.name} (${product.sku}) - Final stock: ${product.stock}`);
 
       } catch (err) {
         results.failed++;
         results.errors.push({ sku, error: err.message });
-        console.error(`❌ Error processing product ${sku}:`, err.message);
+        console.error(` Error processing product ${sku}:`, err.message);
       }
     }
 

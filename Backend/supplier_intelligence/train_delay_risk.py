@@ -7,7 +7,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
 def train_delay_model():
-    data_path = "d:/Major/Backend/supplier_intelligence/processed_supplier_data.csv"
+    # Use relative path from current script location
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    data_path = os.path.join(script_dir, "processed_supplier_data.csv")
+    
     if not os.path.exists(data_path):
         print("Processed data not found. Run loader first.")
         return
@@ -33,7 +36,7 @@ def train_delay_model():
     model.fit(X_train, y_train)
     
     # Save model and encoders
-    model_dir = "d:/Major/Backend/supplier_intelligence/models"
+    model_dir = os.path.join(script_dir, "models")
     os.makedirs(model_dir, exist_ok=True)
     
     with open(os.path.join(model_dir, "delay_risk_model.pkl"), "wb") as f:

@@ -29,10 +29,10 @@ def verify_models():
         all_exist = all_exist and exists
     
     if not all_exist:
-        print("\n❌ ERROR: Some model files are missing!")
+        print("\n ERROR: Some model files are missing!")
         return False
     
-    print("\n✅ All model files present!")
+    print("\n All model files present!")
     
     # Test model loading and prediction
     print("\n2. Testing Model Loading & Prediction:")
@@ -59,14 +59,14 @@ def verify_models():
             result = engine.predict_risk(supplier, category, qty, price, pay_risk)
             
             if "error" in result:
-                print(f"❌ {supplier:<20} ERROR: {result['error']}")
+                print(f" {supplier:<20} ERROR: {result['error']}")
             else:
                 risk_score = result['risk_score']
                 risk_level = result['label']
                 print(f"✓ {supplier:<20} {category:<15} {risk_score:>10.2f} {risk_level:<10}")
         
         print("\n" + "=" * 60)
-        print("✅ ALL MODELS VERIFIED SUCCESSFULLY!")
+        print(" ALL MODELS VERIFIED SUCCESSFULLY!")
         print("=" * 60)
         print("\nModel Details:")
         print(f"  • Delay Risk Model: Predicts delivery delays")
@@ -81,7 +81,7 @@ def verify_models():
         return True
         
     except Exception as e:
-        print(f"\n❌ ERROR during model testing: {e}")
+        print(f"\n ERROR during model testing: {e}")
         import traceback
         traceback.print_exc()
         return False

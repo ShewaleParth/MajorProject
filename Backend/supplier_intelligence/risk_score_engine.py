@@ -4,7 +4,11 @@ import numpy as np
 import pandas as pd
 
 class RiskScoreEngine:
-    def __init__(self, models_dir="d:/Major/Backend/supplier_intelligence/models"):
+    def __init__(self, models_dir=None):
+        if models_dir is None:
+            # Use relative path from current script location
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            models_dir = os.path.join(script_dir, "models")
         self.models_dir = models_dir
         self.delay_data = self._load_model("delay_risk_model.pkl")
         self.quality_data = self._load_model("quality_risk_model.pkl")

@@ -103,4 +103,4 @@ const rows = products.map(p => `${p.sku},"${p.name}",${p.category},${p.stock},${
 const content = headers + '\n' + rows.join('\n');
 
 fs.writeFileSync(CSV_PATH, content);
-console.log('✅ Generated High-Quality Product Specific Images CSV');
+console.log(' Generated High-Quality Product Specific Images CSV');

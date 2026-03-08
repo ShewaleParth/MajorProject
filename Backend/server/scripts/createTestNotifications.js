@@ -5,8 +5,8 @@ const Alert = require('../models/Alert');
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('✅ Connected to MongoDB'))
-    .catch(err => console.error('❌ MongoDB connection error:', err));
+    .then(() => console.log(' Connected to MongoDB'))
+    .catch(err => console.error(' MongoDB connection error:', err));
 
 // Sample notifications for testing
 const sampleNotifications = [
@@ -84,11 +84,11 @@ const sampleNotifications = [
 
 async function createTestNotifications(userId) {
     try {
-        console.log(`\n📝 Creating test notifications for user: ${userId}\n`);
+        console.log(`\n Creating test notifications for user: ${userId}\n`);
 
         // Delete existing test notifications for this user
         await Alert.deleteMany({ userId });
-        console.log('🗑️  Cleared existing notifications\n');
+        console.log(' Cleared existing notifications\n');
 
         // Create new notifications
         for (const notif of sampleNotifications) {
@@ -98,10 +98,10 @@ async function createTestNotifications(userId) {
                 createdAt: new Date(Date.now() - Math.random() * 86400000 * 3) // Random time within last 3 days
             });
             await alert.save();
-            console.log(`✅ Created: ${notif.title}`);
+            console.log(` Created: ${notif.title}`);
         }
 
-        console.log(`\n✨ Successfully created ${sampleNotifications.length} test notifications!\n`);
+        console.log(`\n Successfully created ${sampleNotifications.length} test notifications!\n`);
 
         // Show stats
         const stats = {
@@ -110,14 +110,14 @@ async function createTestNotifications(userId) {
             critical: await Alert.countDocuments({ userId, category: 'critical' })
         };
 
-        console.log('📊 Notification Stats:');
+        console.log(' Notification Stats:');
         console.log(`   Total: ${stats.total}`);
         console.log(`   Unread: ${stats.unread}`);
         console.log(`   Critical: ${stats.critical}\n`);
 
         process.exit(0);
     } catch (error) {
-        console.error('❌ Error creating notifications:', error);
+        console.error(' Error creating notifications:', error);
         process.exit(1);
     }
 }
@@ -126,7 +126,7 @@ async function createTestNotifications(userId) {
 const userId = process.argv[2];
 
 if (!userId) {
-    console.error('❌ Please provide a userId as argument');
+    console.error(' Please provide a userId as argument');
     console.log('Usage: node createTestNotifications.js <userId>');
     process.exit(1);
 }

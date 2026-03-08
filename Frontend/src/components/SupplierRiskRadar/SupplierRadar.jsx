@@ -16,6 +16,7 @@ const SupplierRadar = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedSupplier, setSelectedSupplier] = useState(null);
+    const [dataSource, setDataSource] = useState(null); // 'mongodb' | 'csv'
 
     useEffect(() => {
         loadData();
@@ -27,6 +28,7 @@ const SupplierRadar = () => {
             const data = await riskApi.getRiskOverview();
             if (data.success) {
                 setSuppliers(data.suppliers);
+                setDataSource(data.source); // 'mongodb' = live, 'csv' = fallback
             }
         } catch (error) {
             console.error("Error loading suppliers");
@@ -57,8 +59,23 @@ const SupplierRadar = () => {
                     </div>
                     <div className="status-badge" style={{ background: 'var(--bg-card)' }}>
                         <ShieldAlert size={14} />
-                        <span>{suppliers.length} Nodes Monitored</span>
+                        <span>{suppliers.length} Suppliers Monitored</span>
                     </div>
+                    {dataSource && (
+                        <div
+                            className="status-badge"
+                            style={{
+                                background: dataSource === 'mongodb'
+                                    ? 'rgba(16,185,129,0.15)'
+                                    : 'rgba(245,158,11,0.15)',
+                                color: dataSource === 'mongodb' ? 'var(--success)' : 'var(--warning)',
+                                border: `1px solid ${dataSource === 'mongodb' ? 'var(--success)' : 'var(--warning)'}`,
+                                fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px'
+                            }}
+                        >
+                            {dataSource === 'mongodb' ? '● LIVE DATA' : '⚠ DEMO DATA'}
+                        </div>
+                    )}
                 </div>
                 <button className="add-items-btn" onClick={loadData}>Refresh Intel</button>
             </div>
@@ -69,6 +86,7 @@ const SupplierRadar = () => {
                         <tr>
                             <th>Supplier Name</th>
                             <th>Category</th>
+                            <th>Products</th>
                             <th>Avg. Delay</th>
                             <th>Fulfillment</th>
                             <th>Quality</th>
@@ -77,10 +95,28 @@ const SupplierRadar = () => {
                         </tr>
                     </thead>
                     <tbody>
+                        {filteredSuppliers.length === 0 && !loading && (
+                            <tr>
+                                <td colSpan="8" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                                    <ShieldAlert size={32} style={{ marginBottom: 8, opacity: 0.4 }} />
+                                    <p style={{ margin: 0 }}>
+                                        {searchTerm
+                                            ? 'No suppliers match your search.'
+                                            : 'No supplier data yet. Add products with supplier names to auto-populate this radar.'}
+                                    </p>
+                                </td>
+                            </tr>
+                        )}
                         {filteredSuppliers.map((s, idx) => (
                             <tr key={idx} onClick={() => setSelectedSupplier(s)}>
                                 <td className="font-medium">{s.supplier}</td>
                                 <td><span className="sku-label" style={{ margin: 0 }}>{s.category}</span></td>
+                                <td>
+                                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                                        {s.total_products ?? '—'}
+                                        <span style={{ fontWeight: 400, fontSize: '11px', marginLeft: 3 }}>SKUs</span>
+                                    </span>
+                                </td>
                                 <td>
                                     <div className="d-flex align-items-center gap-1">
                                         <Clock size={14} className="text-muted" />

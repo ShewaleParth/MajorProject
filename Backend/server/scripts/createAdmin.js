@@ -38,17 +38,17 @@ const createAdmin = async () => {
     console.log('╚══════════════════════════════════════════════════╝\n');
 
     // Connect to MongoDB
-    console.log('🔄 Connecting to MongoDB...');
+    console.log(' Connecting to MongoDB...');
     await mongoose.connect(MONGODB_URI);
-    console.log('✅ Connected to MongoDB\n');
+    console.log(' Connected to MongoDB\n');
 
     // Check if any admin exists
     const existingAdminCount = await Admin.countDocuments();
     if (existingAdminCount > 0) {
-      console.log(`⚠️  Warning: ${existingAdminCount} admin account(s) already exist in the database.`);
+      console.log(`  Warning: ${existingAdminCount} admin account(s) already exist in the database.`);
       const proceed = await question('Do you want to create another admin? (yes/no): ');
       if (proceed.toLowerCase() !== 'yes' && proceed.toLowerCase() !== 'y') {
-        console.log('❌ Admin creation cancelled.');
+        console.log(' Admin creation cancelled.');
         rl.close();
         process.exit(0);
       }
@@ -88,7 +88,7 @@ const createAdmin = async () => {
       throw new Error('Passwords do not match');
     }
 
-    console.log('\n🔄 Creating admin account...');
+    console.log('\n Creating admin account...');
 
     // Check if username or email already exists
     const existingAdmin = await Admin.findOne({
@@ -116,7 +116,7 @@ const createAdmin = async () => {
     await admin.save();
 
     console.log('\n╔══════════════════════════════════════════════════╗');
-    console.log('║          ✅ Admin Account Created!               ║');
+    console.log('║            Admin Account Created!               ║');
     console.log('╚══════════════════════════════════════════════════╝\n');
     console.log('Admin Details:');
     console.log('─────────────────────────────────────────────────');
@@ -126,14 +126,14 @@ const createAdmin = async () => {
     console.log(`Role:     ${admin.role}`);
     console.log(`ID:       ${admin._id}`);
     console.log('─────────────────────────────────────────────────\n');
-    console.log('⚠️  IMPORTANT: Save these credentials securely!');
-    console.log('💡 You can now login to the system using these credentials.\n');
+    console.log('  IMPORTANT: Save these credentials securely!');
+    console.log(' You can now login to the system using these credentials.\n');
 
     rl.close();
     process.exit(0);
 
   } catch (error) {
-    console.error('\n❌ Error creating admin:', error.message);
+    console.error('\n Error creating admin:', error.message);
     rl.close();
     process.exit(1);
   }

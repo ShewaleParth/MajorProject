@@ -23,7 +23,7 @@ const createStockAlert = async (product, userId) => {
         productId: product._id
       });
       await alert.save();
-      console.log(`✅ Created ${isOutOfStock ? 'out-of-stock' : 'low-stock'} alert for ${product.name}`);
+      console.log(` Created ${isOutOfStock ? 'out-of-stock' : 'low-stock'} alert for ${product.name}`);
     }
   }
 
@@ -47,7 +47,7 @@ const createStockAlert = async (product, userId) => {
         productId: product._id
       });
       await alert.save();
-      console.log(`✅ Created overstock alert for ${product.name}`);
+      console.log(` Created overstock alert for ${product.name}`);
     }
   }
 
@@ -76,7 +76,7 @@ const createStockAlert = async (product, userId) => {
         }
       });
       await alert.save();
-      console.log(`✅ Created reorder-point alert for ${product.name}`);
+      console.log(` Created reorder-point alert for ${product.name}`);
     }
   }
 };
@@ -114,7 +114,7 @@ const checkDepotCapacity = async (depotId, userId) => {
           }
         });
         await alert.save();
-        console.log(`✅ Created capacity warning for depot ${depot.name} (${Math.round(utilizationPercent)}%)`);
+        console.log(` Created capacity warning for depot ${depot.name} (${Math.round(utilizationPercent)}%)`);
       }
     }
   } catch (error) {

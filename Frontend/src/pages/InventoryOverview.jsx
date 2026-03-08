@@ -141,11 +141,27 @@ const InventoryOverview = () => {
     const [selectedProductForForecast, setSelectedProductForForecast] = useState(null);
     const fileInputRef = useRef(null);
 
-    const fetchData = async () => {
+    // ── Pagination state ────────────────────────────────────────────────────
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(20);
+    const [totalItems, setTotalItems] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
+    const [allCategories, setAllCategories] = useState(['All']);
+    // Stats tracked separately so KPI cards show correct totals across all pages
+    const [statsData, setStatsData] = useState({ lowStock: 0, outOfStock: 0 });
+
+    const fetchData = async (page = currentPage, limit = itemsPerPage) => {
         setLoading(true);
         try {
+            const params = {
+                page,
+                limit,
+                ...(searchQuery && { search: searchQuery }),
+                ...(selectedCategory !== 'All' && { category: selectedCategory }),
+            };
+
             const [productsData, depotsData] = await Promise.all([
-                api.getProducts(),
+                api.getProducts(params),
                 api.getDepots()
             ]);
 
@@ -157,10 +173,25 @@ const InventoryOverview = () => {
                     year: p.year || 2024,
                     cost: p.cost || '10%',
                     origin: p.origin || 'International',
-                    // Keep raw image separate from display image to avoid pre-filling placeholders into edit modal
                     displayImage: p.image && p.image.trim() !== '' ? p.image : `https://api.dicebear.com/7.x/identicon/svg?seed=${p.sku}`
                 }));
                 setProducts(enhancedProducts);
+                setTotalItems(productsData.total || 0);
+                setTotalPages(productsData.pages || 1);
+                setCurrentPage(productsData.currentPage || page);
+
+                // Build category list from current page (good enough for filter)
+                const cats = ['All', ...new Set(enhancedProducts.map(p => p.category))];
+                setAllCategories(prev => {
+                    const merged = ['All', ...new Set([...prev.slice(1), ...cats.slice(1)])];
+                    return merged;
+                });
+
+                // Track stats across visible page
+                setStatsData({
+                    lowStock: enhancedProducts.filter(p => p.riskLevel === 'HIGH' || p.riskLevel === 'MEDIUM').length,
+                    outOfStock: enhancedProducts.filter(p => p.stock === 0).length,
+                });
             } else {
                 setProducts([]);
             }
@@ -177,8 +208,13 @@ const InventoryOverview = () => {
     };
 
     useEffect(() => {
-        fetchData();
+        fetchData(1, itemsPerPage);
     }, []);
+
+    // Re-fetch when search, category, or items-per-page changes
+    useEffect(() => {
+        fetchData(1, itemsPerPage);
+    }, [searchQuery, selectedCategory, itemsPerPage]);
 
     const handleAddProduct = async (newProduct) => {
         try {
@@ -300,16 +336,37 @@ const InventoryOverview = () => {
     };
 
     const filteredProducts = products.filter(p => {
+        // Search + depot filter (category already sent to server, depot still client-side)
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             p.sku.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
         const matchesDepot = selectedDepot === 'All' ||
             (p.depotDistribution && p.depotDistribution.some(d => d.depotId === selectedDepot || d.depotName === selectedDepot));
-
-        return matchesSearch && matchesCategory && matchesDepot;
+        return matchesSearch && matchesDepot;
     });
 
-    const categories = ['All', ...new Set(products.map(p => p.category))];
+    const categories = allCategories;
+
+    // Pagination helpers
+    const handlePageChange = (newPage) => {
+        if (newPage < 1 || newPage > totalPages) return;
+        setExpandedRow(null);
+        fetchData(newPage, itemsPerPage);
+    };
+
+    const handleItemsPerPageChange = (newLimit) => {
+        setItemsPerPage(newLimit);
+        // useEffect will re-fetch automatically
+    };
+
+    // Generate page number buttons (max 5 visible)
+    const getPageNumbers = () => {
+        const range = [];
+        const delta = 2;
+        const left = Math.max(1, currentPage - delta);
+        const right = Math.min(totalPages, currentPage + delta);
+        for (let i = left; i <= right; i++) range.push(i);
+        return range;
+    };
 
     return (
         <div className="inventory-view-container">
@@ -404,7 +461,7 @@ const InventoryOverview = () => {
                         <div className="stat-card-content">
                             <h4>Total Items</h4>
                             <p className="stat-description">Total items in stock</p>
-                            <div className="stat-number">{products.length}</div>
+                            <div className="stat-number">{totalItems}</div>
                         </div>
                     </div>
 
@@ -415,9 +472,7 @@ const InventoryOverview = () => {
                         <div className="stat-card-content">
                             <h4>Low Stock Items</h4>
                             <p className="stat-description">Number of items that are running low</p>
-                            <div className="stat-number">
-                                {products.filter(p => p.riskLevel === 'HIGH' || p.riskLevel === 'MEDIUM').length}
-                            </div>
+                            <div className="stat-number">{statsData.lowStock}</div>
                         </div>
                     </div>
 
@@ -439,9 +494,7 @@ const InventoryOverview = () => {
                         <div className="stat-card-content">
                             <h4>Out of Stock Items</h4>
                             <p className="stat-description">Count of items currently out of stock</p>
-                            <div className="stat-number">
-                                {products.filter(p => p.stock === 0).length}
-                            </div>
+                            <div className="stat-number">{statsData.outOfStock}</div>
                         </div>
                     </div>
                 </div>
@@ -487,6 +540,18 @@ const InventoryOverview = () => {
                     </div>
 
                     <div className="filters-right">
+                        {/* Items per page selector */}
+                        <select
+                            value={itemsPerPage}
+                            onChange={e => handleItemsPerPageChange(Number(e.target.value))}
+                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-card)', fontSize: '13px', color: 'var(--text-main)', cursor: 'pointer' }}
+                            title="Items per page"
+                        >
+                            <option value={10}>10 / page</option>
+                            <option value={20}>20 / page</option>
+                            <option value={50}>50 / page</option>
+                            <option value={100}>100 / page</option>
+                        </select>
                         <button className="export-btn" onClick={() => fileInputRef.current.click()}>
                             Upload CSV <Upload size={18} style={{ marginLeft: '8px' }} />
                         </button>
@@ -625,9 +690,67 @@ const InventoryOverview = () => {
                         </table>
                     )}
                 </div>
+
+                {/* ── Pagination Bar ─────────────────────────────────────────── */}
+                {!loading && totalPages > 1 && (
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '16px 4px', marginTop: '8px', flexWrap: 'wrap', gap: '12px'
+                    }}>
+                        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                            Showing <strong>{(currentPage - 1) * itemsPerPage + 1}</strong>–<strong>{Math.min(currentPage * itemsPerPage, totalItems)}</strong> of <strong>{totalItems}</strong> products
+                        </span>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {/* First */}
+                            <button
+                                onClick={() => handlePageChange(1)}
+                                disabled={currentPage === 1}
+                                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-card)', color: currentPage === 1 ? 'var(--text-muted)' : 'var(--text-main)', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontSize: '13px' }}
+                            >«</button>
+
+                            {/* Prev */}
+                            <button
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-card)', color: currentPage === 1 ? 'var(--text-muted)' : 'var(--text-main)', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontSize: '13px' }}
+                            >‹ Prev</button>
+
+                            {/* Page numbers */}
+                            {getPageNumbers().map(num => (
+                                <button
+                                    key={num}
+                                    onClick={() => handlePageChange(num)}
+                                    style={{
+                                        padding: '6px 12px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer',
+                                        fontWeight: num === currentPage ? 700 : 400,
+                                        background: num === currentPage ? 'var(--primary)' : 'var(--bg-card)',
+                                        color: num === currentPage ? '#fff' : 'var(--text-main)',
+                                        border: `1px solid ${num === currentPage ? 'var(--primary)' : 'var(--border)'}`
+                                    }}
+                                >{num}</button>
+                            ))}
+
+                            {/* Next */}
+                            <button
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-card)', color: currentPage === totalPages ? 'var(--text-muted)' : 'var(--text-main)', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontSize: '13px' }}
+                            >Next ›</button>
+
+                            {/* Last */}
+                            <button
+                                onClick={() => handlePageChange(totalPages)}
+                                disabled={currentPage === totalPages}
+                                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-card)', color: currentPage === totalPages ? 'var(--text-muted)' : 'var(--text-main)', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontSize: '13px' }}
+                            >»</button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
 };
 
 export default InventoryOverview;
+

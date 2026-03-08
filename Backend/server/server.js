@@ -112,10 +112,10 @@ app.use('/api/alerts', authenticateToken, alertRoutes);
 
 // WebSocket connection handling
 io.on('connection', (socket) => {
-  console.log('📌 New client connected:', socket.id);
+  console.log(' New client connected:', socket.id);
 
   socket.on('disconnect', () => {
-    console.log('📌 Client disconnected:', socket.id);
+    console.log(' Client disconnected:', socket.id);
   });
 });
 
@@ -128,10 +128,10 @@ app.use(errorHandler);
 // Start server
 const PORT = config.PORT;
 server.listen(PORT, () => {
-  console.log(`\n🚀 Server running on port ${PORT}`);
-  console.log(`🔍 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`📡 API Base URL: http://localhost:${PORT}/api`);
-  console.log(`🌍 Environment: ${config.NODE_ENV}\n`);
+  console.log(`\n Server running on port ${PORT}`);
+  console.log(` Health check: http://localhost:${PORT}/api/health`);
+  console.log(` API Base URL: http://localhost:${PORT}/api`);
+  console.log(` Environment: ${config.NODE_ENV}\n`);
 });
 
 module.exports = { app, server, io };

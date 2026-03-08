@@ -13,20 +13,20 @@ try {
     
     // Test connection
     redis.ping().then(() => {
-      console.log('✅ Upstash Redis connected successfully (REST API)');
+      console.log(' Upstash Redis connected successfully (REST API)');
       isRedisConnected = true;
     }).catch(err => {
-      console.error('⚠️  Upstash Redis connection error:', err.message);
-      console.log('💡 Server will continue without Redis');
+      console.error('  Upstash Redis connection error:', err.message);
+      console.log(' Server will continue without Redis');
       isRedisConnected = false;
     });
   } else {
-    console.log('⚠️  Redis credentials not found in .env');
-    console.log('💡 Server will continue without Redis (reports will work but slower)');
+    console.log('  Redis credentials not found in .env');
+    console.log(' Server will continue without Redis (reports will work but slower)');
   }
 } catch (error) {
-  console.log('⚠️  Redis not available:', error.message);
-  console.log('💡 Server will continue without Redis');
+  console.log('  Redis not available:', error.message);
+  console.log(' Server will continue without Redis');
 }
 
 // Cache helper functions with fallback

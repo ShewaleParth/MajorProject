@@ -62,9 +62,9 @@ df = pd.DataFrame(products_data)
 output_path = 'd:/Major Project/Sangrahak/Dataset/real_sales_data.csv'
 df.to_csv(output_path, index=False)
 
-print(f"✅ Created {output_path}")
-print(f"📊 Generated {len(df)} products with realistic sales data\n")
-print(f"📈 Statistics:")
+print(f" Created {output_path}")
+print(f" Generated {len(df)} products with realistic sales data\n")
+print(f"Statistics:")
 print(f"   Stock: {df['stock'].min()}-{df['stock'].max()} units (avg: {df['stock'].mean():.0f})")
 print(f"   Daily Sales: {df['dailySales'].min()}-{df['dailySales'].max()} units (avg: {df['dailySales'].mean():.1f})")
 print(f"   Weekly Sales: {df['weeklySales'].min()}-{df['weeklySales'].max()} units (avg: {df['weeklySales'].mean():.0f})\n")
@@ -76,9 +76,9 @@ df['risk'] = df.apply(lambda x:
     'Medium' if x['eta'] < 15 else
     'Low', axis=1)
 
-print(f"🎯 Risk Distribution:")
+print(f" Risk Distribution:")
 for risk, count in df['risk'].value_counts().items():
     print(f"   {risk}: {count} products")
 
-print(f"\n📄 Sample (first 5):")
+print(f"\n Sample (first 5):")
 print(df[['sku', 'name', 'stock', 'dailySales', 'risk']].head().to_string(index=False))

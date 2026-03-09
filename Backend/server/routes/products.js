@@ -10,6 +10,7 @@ const Transaction = require('../models/Transaction');
 const { generateUniqueSKU, updateProductStatus, updateProductStockFromDepots } = require('../utils/productHelpers');
 const { createStockAlert, checkDepotCapacity } = require('../utils/alertHelpers');
 const { recalculateDepotMetrics } = require('../utils/depotHelpers');
+const { requirePermission } = require('../middleware/permissions');
 
 // GET all products
 router.get('/', async (req, res, next) => {
@@ -17,7 +18,7 @@ router.get('/', async (req, res, next) => {
     const { search, category, status, location, page = 1, limit = 20 } = req.query;
     const pageNum = Math.max(1, parseInt(page));
     const limitNum = Math.min(Math.max(1, parseInt(limit)), 500); // max 500 per page
-    const query = { userId: req.userId };
+    const query = { userId: req.organizationId };
 
     if (location) {
       query.location = location;
@@ -104,10 +105,10 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// POST - Create product
-router.post('/', async (req, res, next) => {
+// POST - Create product (STAFF, MANAGER, ADMIN)
+router.post('/', requirePermission('products:write'), async (req, res, next) => {
   try {
-    const userId = req.userId;
+    const userId = req.organizationId;
     let { sku, name, category, stock, reorderPoint, supplier, price, depotId, depotQuantity, image } = req.body;
 
     if (!depotId) {
@@ -190,7 +191,7 @@ router.post('/', async (req, res, next) => {
 router.post('/bulk', async (req, res, next) => {
   try {
     const productsData = req.body;
-    const userId = req.userId;
+    const userId = req.organizationId;
     const io = req.app.get('io'); // Get WebSocket instance
 
     console.log('Bulk upload request received:', {
@@ -554,7 +555,7 @@ router.post('/bulk', async (req, res, next) => {
 router.post('/bulk-with-transactions', async (req, res, next) => {
   try {
     const productsData = req.body;
-    const userId = req.userId;
+    const userId = req.organizationId;
 
     if (!Array.isArray(productsData)) {
       return res.status(400).json({ message: 'Input must be an array of products' });
@@ -766,7 +767,7 @@ router.post('/bulk-with-transactions', async (req, res, next) => {
 // GET - Get product details with full analytics
 router.get('/:id/details', async (req, res, next) => {
   try {
-    const userId = req.userId;
+    const userId = req.organizationId;
     const productId = req.params.id;
     const Transaction = require('../models/Transaction');
 
@@ -867,7 +868,7 @@ router.get('/:id/details', async (req, res, next) => {
 // GET - Get product by ID
 router.get('/:id', async (req, res, next) => {
   try {
-    const userId = req.userId;
+    const userId = req.organizationId;
     const product = await Product.findOne({ _id: req.params.id, userId });
 
     if (!product) {
@@ -883,7 +884,7 @@ router.get('/:id', async (req, res, next) => {
 // PUT - Update product
 router.put('/:id', async (req, res, next) => {
   try {
-    const userId = req.userId;
+    const userId = req.organizationId;
 
     const product = await Product.findOne({ _id: req.params.id, userId });
     if (!product) {
@@ -923,7 +924,7 @@ router.put('/:id', async (req, res, next) => {
 // POST - Add stock to existing product (Manual Stock Addition)
 router.post('/:id/add-stock', async (req, res, next) => {
   try {
-    const userId = req.userId;
+    const userId = req.organizationId;
     const productId = req.params.id;
     const { depotId, quantity, reason } = req.body;
 
@@ -1055,10 +1056,10 @@ router.post('/:id/add-stock', async (req, res, next) => {
     next(error);
   }
 });
-// DELETE - Delete product
-router.delete('/:id', async (req, res, next) => {
+// DELETE - Delete product (MANAGER + ADMIN only)
+router.delete('/:id', requirePermission('products:delete'), async (req, res, next) => {
   try {
-    const userId = req.userId;
+    const userId = req.organizationId;
     const Alert = require('../models/Alert');
 
     const product = await Product.findOne({ _id: req.params.id, userId });
@@ -1103,7 +1104,7 @@ router.delete('/:id', async (req, res, next) => {
 // GET - Get all categories
 router.get('/categories/list', async (req, res, next) => {
   try {
-    const userId = req.userId;
+    const userId = req.organizationId;
     const categories = await Product.distinct('category', { userId });
     res.json({ categories });
   } catch (error) {

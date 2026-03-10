@@ -205,6 +205,11 @@ export const api = {
         return response.data;
     },
 
+    getReportAnalytics: async () => {
+        const response = await nodeApi.get('/reports/analytics');
+        return response.data;
+    },
+
     getReportsList: async (params) => {
         const response = await nodeApi.get('/reports/list', { params });
         return response.data;

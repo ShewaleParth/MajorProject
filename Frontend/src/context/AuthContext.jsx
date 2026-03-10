@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { can } from '../utils/permissions';
+import { setAuthToken } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -18,6 +19,11 @@ export const AuthProvider = ({ children }) => {
   // The refresh token lives in a httpOnly cookie managed by the browser.
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Sync token with the API utility
+  useEffect(() => {
+    setAuthToken(token);
+  }, [token]);
 
   /**
    * Silent refresh: called on app boot and when access token expires.

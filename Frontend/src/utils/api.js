@@ -7,9 +7,15 @@ const PYTHON_API_URL = '/ml-api';
 const nodeApi = axios.create({ baseURL: NODE_API_URL });
 const pythonApi = axios.create({ baseURL: PYTHON_API_URL });
 
+let currentToken = null;
+
+export const setAuthToken = (token) => {
+    currentToken = token;
+};
+
 // Request interceptor to add JWT token
 nodeApi.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
+    const token = currentToken || localStorage.getItem('token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }

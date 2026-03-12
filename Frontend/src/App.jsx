@@ -10,10 +10,8 @@ import Dashboard from './pages/Dashboard';
 import InventoryOverview from './pages/InventoryOverview';
 import ProductDetailsView from './pages/ProductDetailsView';
 import Depots from './pages/Depots';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import VerifyOTP from './pages/VerifyOTP';
-import ForgotPassword from './pages/ForgotPassword';
+import LoginPage from './pages/LoginPage';
+import LandingPage from './pages/LandingPage';
 import SupplierRiskRadar from './pages/SupplierRiskRadar';
 import Reports from './pages/Reports';
 import MovementTransactions from './pages/MovementTransactions';
@@ -129,13 +127,11 @@ function App() {
           <Router>
             <Routes>
               {/* Public Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/verify-otp" element={<VerifyOTP />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
 
               {/* Protected App Shell — all pages rendered via activeItem switch */}
-              <Route path="/" element={<AppContent />} />
+              <Route path="/dashboard" element={<AppContent />} />
 
               {/* Product Details Route */}
               <Route

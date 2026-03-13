@@ -1,0 +1,1256 @@
+NEXUSSTOCK
+Complete Implementation Guide
+Landing Page  ·  Login & Authentication Page
+React v19  ·  Vite  ·  GSAP  ·  Three.js  ·  Framer Motion  ·  Node.js + MongoDB
+Confidential Technical Documentation  —  2025
+
+1. Technology Stack & Project Setup
+Before building either page, your project must have the following packages installed and configured. This section covers every dependency, its purpose, and the exact install command.
+
+1.1  Project Initialisation
+# Create a new Vite + React project
+npm create vite@latest nexusstock -- --template react
+cd nexusstock
+
+# Install all frontend dependencies
+npm install react-router-dom framer-motion lucide-react recharts axios
+
+# Install Three.js and GSAP for advanced animations
+npm install three gsap @gsap/react
+
+# Install Tailwind CSS (optional but recommended)
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+
+1.2  Frontend Dependencies
+Package
+Purpose & Usage
+react@19.2.0
+Core framework — component tree, hooks, state management
+vite@7.3.1
+Build tool — HMR dev server, optimised production bundles
+react-router-dom@7.11.0
+Client-side routing — useNavigate, loader/action model (v7 breaking changes)
+framer-motion@12.35.2
+Declarative animations — page transitions, scroll animations, variants
+three@latest
+WebGL 3D rendering — neural network on login, orb on landing hero
+gsap@3.12+
+Professional scroll animations — ScrollTrigger, timeline sequences, parallax
+lucide-react@0.562.0
+Icon library — consistent SVG icons throughout the UI
+recharts@3.8.0
+Chart components — KPI sparklines, dashboard bar charts, line graphs
+axios@1.13.2
+HTTP client — API calls to Express backend with interceptors
+
+1.3  Backend Dependencies
+# Backend setup
+mkdir server && cd server
+npm init -y
+
+npm install express mongoose bcryptjs jsonwebtoken
+npm install redis bull socket.io groq-sdk
+npm install cors dotenv helmet express-rate-limit
+npm install -D nodemon
+Package
+Purpose
+express@5.2.1
+HTTP server & REST API routing (note: v5 still RC — pin in production)
+mongoose@8.20.4
+MongoDB ODM — schema validation, middleware, population
+bcryptjs
+Password hashing — 12 salt rounds for signup, compare on login
+jsonwebtoken
+JWT generation & verification — access tokens + refresh token pattern
+redis + bull/bullmq
+Task queues — auto-reorder jobs, OTP expiry, email delivery
+socket.io
+Real-time bidirectional events — live KPI updates on dashboard
+groq-sdk
+AI inference — demand forecasting, anomaly detection, smart reorder
+express-rate-limit
+Brute-force protection on /login and /otp endpoints
+
+1.4  Folder Structure
+nexusstock/
+├── src/
+│   ├── components/
+│   │   ├── Navbar.jsx         # Glassmorphism scrolled state
+│   │   ├── KPICard.jsx        # Floating hero cards
+│   │   └── ModuleDemo.jsx     # Dashboard/Inventory/Supplier tabs
+│   ├── pages/
+│   │   ├── LandingPage.jsx    # Hero + Features + Modules + CTA
+│   │   └── LoginPage.jsx      # Login/Signup/ForgotPw/OTP states
+│   ├── hooks/
+│   │   ├── useScrolled.js     # Navbar scroll state (>20px)
+│   │   └── useThree.js        # Three.js scene lifecycle
+│   ├── animations/
+│   │   ├── gsap.config.js     # ScrollTrigger defaults
+│   │   └── variants.js        # Framer Motion variant objects
+│   └── styles/
+│       └── globals.css        # CSS variables + reset
+├── server/
+│   ├── routes/ controllers/ models/ middleware/
+│   └── index.js
+└── vite.config.js
+
+2. Landing Page — Implementation Guide
+The landing page is a premium, cinematic single-page experience. It consists of five core sections. Each section is described below with its full implementation, component code, and animation instructions.
+
+2.1  Navbar — Glassmorphism Scroll State
+What to Build
+A fixed-position navbar that starts fully transparent.
+When the user scrolls beyond 20px, it transitions to a frosted-glass panel using backdrop-filter.
+The active nav link is highlighted with an orange pill background.
+A "Get Started" CTA button sits on the right.
+A vertical social icon bar is fixed to the right edge of the screen.
+
+2.1.1  useScrolled Custom Hook
+Create this hook so any component can reactively know the scroll state.
+// src/hooks/useScrolled.js
+import { useState, useEffect } from "react";
+
+export function useScrolled(threshold = 20) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > threshold);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [threshold]);
+  return scrolled;
+}
+
+2.1.2  Navbar Component
+// src/components/Navbar.jsx
+import { useScrolled } from "../hooks/useScrolled";
+
+export default function Navbar() {
+  const scrolled = useScrolled(20); // triggers at 20px (doc spec)
+
+  return (
+    <nav className={`navbar ${scrolled ? "scrolled" : ""}`}>
+      <a href="/" className="nav-logo">
+        <div className="logo-box">⬡</div>
+        NexusStock
+      </a>
+
+      <div className="nav-links-pill">
+        {["Main", "About", "Platform", "Roadmap"].map(link => (
+          <NavLink key={link} label={link} />
+        ))}
+      </div>
+
+      <a href="/login" className="nav-cta">Get Started →</a>
+    </nav>
+  );
+}
+
+2.1.3  CSS — Glassmorphism Transition
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 26px 5%;
+  z-index: 100;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.navbar.scrolled {
+  background: rgba(4, 5, 10, 0.82);        /* semi-transparent bg */
+  backdrop-filter: blur(24px);             /* frosted glass effect */
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding: 16px 5%;                        /* tighter on scroll */
+}
+
+
+2.2  Hero Section — Split Layout
+What to Build
+A full-viewport-height section split into two columns: left (text) and right (KPI cards).
+Left column: badge tag, giant uppercase gradient headline, subtitle paragraph, CTA buttons, 3 metric counters.
+Right column: 4 absolutely-positioned KPI cards with independent CSS float animations.
+Behind everything: a Three.js animated particle orb with orbiting rings and data pulse particles.
+A giant faint background text ("NEXUSSTOCK") scrolls at a different rate for parallax depth.
+
+2.2.1  Hero Layout CSS
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  min-height: 100vh;
+  padding: 0 5%;
+  padding-top: 90px;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (max-width: 1100px) {
+  .hero { grid-template-columns: 1fr; text-align: center; }
+  .hero-right { display: none; }
+}
+
+2.2.2  Animated Gradient Title Span
+The phrase "Total Inventory Control" uses an animated gradient that continuously shifts its colour position.
+/* The gradient span — doc spec: "gradient span (Total Inventory Control)" */
+.hero-title .gradient-span {
+  background: linear-gradient(
+    135deg,
+    #ff6b1a 0%,
+    #ffb830 50%,
+    #ff9d52 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 200% auto;
+  animation: grad-shift 4s ease infinite;
+}
+
+@keyframes grad-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+2.2.3  KPI Card Component
+Each card has an icon, label, value, change indicator, and a progress bar. Four cards are positioned absolutely inside the hero-right container.
+// src/components/KPICard.jsx
+import { motion } from "framer-motion";
+
+export function KPICard({ icon, label, value, change, changeType, barFill, barColor, delay }) {
+  return (
+    <motion.div
+      className="kpi-card"
+      initial={{ opacity: 0, y: 60 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, delay, ease: [0.34, 1.56, 0.64, 1] }}
+      whileHover={{ y: -6, boxShadow: "0 14px 44px rgba(0,0,0,0.5)" }}
+    >
+      <div className={`kpi-icon ${icon.bg}`}>{icon.emoji}</div>
+      <div className="kpi-label">{label}</div>
+      <div className="kpi-value">{value}</div>
+      <div className={`kpi-change ${changeType}`}>{change}</div>
+      <div className="kpi-bar">
+        <motion.div
+          className={`kpi-bar-fill ${barColor}`}
+          initial={{ width: 0 }}
+          animate={{ width: `${barFill}%` }}
+          transition={{ duration: 1.5, delay: delay + 0.4, ease: "easeOut" }}
+        />
+      </div>
+    </motion.div>
+  );
+}
+
+2.2.4  Float Animations — CSS
+Each card gets a different float keyframe timing to create an organic, independent movement.
+@keyframes float-1 { 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-16px) } }
+@keyframes float-2 { 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-12px) } }
+@keyframes float-3 { 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-20px) } }
+
+.kc-1 { top:30px;  left:60px;  animation: float-1 7.0s ease-in-out infinite; }
+.kc-2 { top:60px;  right:10px; animation: float-2 6.5s ease-in-out infinite 0.8s; }
+.kc-3 { bottom:140px; left:20px; animation: float-3 8.0s ease-in-out infinite 0.4s; }
+.kc-4 { bottom:80px; right:50px; animation: float-2 5.8s ease-in-out infinite 1.2s; }
+
+2.2.5  GSAP Hero Entrance Timeline
+Use a GSAP timeline to orchestrate the staggered entrance of every hero element on page load.
+import { gsap } from "gsap";
+import { useLayoutEffect, useRef } from "react";
+
+export function useHeroEntrance() {
+  useLayoutEffect(() => {
+    const tl = gsap.timeline({ delay: 0.15 });
+    tl
+      // 1. Faint bg text expands in
+      .from("#hero-bg-text", { scaleX: 0.5, opacity: 0, duration: 1.6, ease: "expo.out" })
+
+      // 2. Tag badge slides up
+      .from("#hero-tag", { y: 30, opacity: 0, duration: 0.7, ease: "power3.out" }, "-=1")
+
+      // 3. Title words stagger upward (power4 for snap)
+      .from(".hero-title .word", {
+        y: 90, opacity: 0, duration: 1, stagger: 0.1, ease: "power4.out"
+      }, "-=0.6")
+
+      // 4. Subtitle fades in
+      .from(".hero-sub", { y: 24, opacity: 0, duration: 0.7 }, "-=0.5")
+
+      // 5. CTA buttons
+      .from(".hero-actions", { y: 22, opacity: 0, duration: 0.6 }, "-=0.4")
+
+      // 6. Metric numbers
+      .from(".h-metric", { y: 20, opacity: 0, duration: 0.5, stagger: 0.1 }, "-=0.3")
+
+      // 7. KPI cards with back.out spring
+      .from(".kpi-card", {
+        y: 60, opacity: 0, duration: 0.9, stagger: 0.13,
+        ease: "back.out(1.5)"
+      }, "-=0.6");
+  }, []);
+}
+
+2.2.6  GSAP Scroll Parallax
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+gsap.registerPlugin(ScrollTrigger);
+
+// Background text drifts upward as user scrolls out
+gsap.to("#hero-bg-text", {
+  y: -90,
+  scrollTrigger: {
+    trigger: ".hero",
+    start: "top top",
+    end:   "bottom top",
+    scrub: 1.5,    // smooth scrub multiplier
+  },
+});
+
+// Hero left moves at slightly slower rate
+gsap.to(".hero-left", {
+  y: -50,
+  scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: 1.2 }
+});
+
+// KPI cards drift at faster rate (depth effect)
+gsap.to(".hero-right", {
+  y: -70,
+  scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: 1.4 }
+});
+
+2.2.7  Three.js Background Orb
+Install Three.js then create a useThree hook that builds the scene and returns the canvas ref.
+// src/hooks/useThree.js
+import * as THREE from "three";
+import { useEffect, useRef } from "react";
+
+export function useThreeOrb(containerRef) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const W = container.offsetWidth;
+    const H = container.offsetHeight;
+
+    const scene    = new THREE.Scene();
+    const camera   = new THREE.PerspectiveCamera(55, W / H, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({
+      canvas: canvasRef.current,
+      antialias: true, alpha: true
+    });
+    camera.position.set(0, 0, 50);
+    renderer.setSize(W, H);
+    renderer.setClearColor(0x000000, 0); // transparent bg
+
+    // Point lights — orange, amber, cyan
+    const lights = [
+      [0xff6b1a, 5, 80, [12, 10, 20]],
+      [0xff9d52, 3, 60, [-14, -8, 14]],
+      [0x00e5ff, 1.5, 50, [0, 18, -12]],
+    ];
+    lights.forEach(([col, int, dist, pos]) => {
+      const l = new THREE.PointLight(col, int, dist);
+      l.position.set(...pos);
+      scene.add(l);
+    });
+
+    // Icosahedron wireframe (the "orb")
+    const ico = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(11, 2),
+      new THREE.MeshPhongMaterial({
+        color: 0xff6b1a, wireframe: true,
+        transparent: true, opacity: 0.12,
+      })
+    );
+    scene.add(ico);
+
+    // Inner glowing core
+    const core = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(6, 1),
+      new THREE.MeshPhongMaterial({
+        color: 0xff4400, emissive: 0x280600,
+        emissiveIntensity: 1.5, transparent: true, opacity: 0.2
+      })
+    );
+    scene.add(core);
+
+    // Orbiting nodes (Fibonacci sphere distribution)
+    const nodes = [];
+    for (let i = 0; i < 65; i++) {
+      const phi   = Math.acos(1 - 2 * (i + 0.5) / 65);
+      const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+      const r = 15 + Math.random() * 9;
+      const mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.2 + Math.random() * 0.25, 8, 8),
+        new THREE.MeshPhongMaterial({ color: 0xff9d52, emissive: 0xff6b1a, emissiveIntensity: 0.7 })
+      );
+      mesh.position.set(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.sin(phi) * Math.sin(theta),
+        r * Math.cos(phi)
+      );
+      mesh.userData = { phase: Math.random() * Math.PI * 2, speed: 0.4 + Math.random() * 0.4 };
+      scene.add(mesh);
+      nodes.push(mesh);
+    }
+
+    // Animation loop
+    let t = 0, frameId;
+    const animate = () => {
+      frameId = requestAnimationFrame(animate);
+      t += 0.006;
+      scene.rotation.y = t * 0.065;
+      ico.rotation.x   = t * 0.1;
+      core.scale.setScalar(1 + Math.sin(t * 1.2) * 0.09);
+      nodes.forEach(n => {
+        const s = 1 + Math.sin(t * n.userData.speed + n.userData.phase) * 0.22;
+        n.scale.setScalar(s);
+      });
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      renderer.dispose();
+    };
+  }, []);
+
+  return canvasRef;
+}
+
+2.3  Features Grid — "Platform Capabilities"
+What to Build
+A 3-column CSS grid of 6 feature cards.
+Each card has: a custom icon with a unique soft-coloured background, a number label, title, description, and a category badge.
+On hover: an orange gradient line sweeps in from the left across the card top border.
+On hover: the background shifts very slightly warm to reinforce the orange theme.
+GSAP ScrollTrigger staggered reveal when the grid enters the viewport.
+
+2.3.1  Features Data Array
+// src/data/features.js
+export const FEATURES = [
+  {
+    num: "01", icon: "🔮", iconBg: "ic-blue",
+    title: "Predictive Intelligence",
+    desc:  "Groq-SDK powered forecasting analyzing 40+ demand signals...",
+    badge: "AI / ML",
+  },
+  {
+    num: "02", icon: "⚡", iconBg: "ic-orange",
+    title: "Real-time Sync Engine",
+    desc:  "Socket.io updates across all warehouses. Sub-50ms latency.",
+    badge: "Live Data",
+  },
+  {
+    num: "03", icon: "🔄", iconBg: "ic-purple",
+    title: "Smart Auto-Reorder",
+    desc:  "Redis + Bull/BullMQ fire purchase orders when thresholds crossed.",
+    badge: "Automation",
+  },
+  // ... 3 more
+];
+
+2.3.2  Features Grid CSS
+.feat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: rgba(255,255,255,0.07); /* gap fills with border colour */
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.feat-card {
+  background: #07080f;
+  padding: 42px 36px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.35s;
+}
+
+/* Orange top-border sweep on hover */
+.feat-card::before {
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, #ff6b1a, #ffb830);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+}
+.feat-card:hover::before { transform: scaleX(1); }
+.feat-card:hover { background: rgba(255,107,26,0.035); }
+
+/* Soft-coloured icon backgrounds (doc spec) */
+.ic-blue   { background: rgba(0,229,255,0.08); }
+.ic-orange { background: rgba(255,107,26,0.10); }
+.ic-purple { background: rgba(121,40,202,0.10); }
+.ic-green  { background: rgba(0,220,130,0.08); }
+.ic-amber  { background: rgba(255,184,48,0.08); }
+.ic-red    { background: rgba(255,71,87,0.08);  }
+
+2.3.3  GSAP ScrollTrigger Stagger Reveal
+// Run after mount, inside useLayoutEffect
+gsap.from(".feat-card", {
+  y: 55,
+  opacity: 0,
+  duration: 0.75,
+  stagger: 0.07,       // 70ms between each card
+  ease: "power3.out",
+  scrollTrigger: {
+    trigger: ".feat-grid",
+    start: "top 82%",  // trigger when top of grid hits 82% of viewport
+    toggleActions: "play none none reverse",
+  },
+});
+
+2.4  Interactive Modules — Dashboard / Inventory / Supplier
+What to Build
+A two-column layout: left = tab list, right = live display panel.
+Three tabs: "Dashboard Overview", "Inventory Control", "Supplier Hub".
+Clicking a tab simultaneously updates: (1) the active tab style, (2) the description text, (3) the metrics pills row, (4) the display panel content, and (5) the topbar label.
+Each panel has its own unique content: bar charts for Dashboard, stock table for Inventory, supplier table for Supplier.
+An animated fade+translateY transition plays whenever the panel switches.
+
+2.4.1  Module Data Structure
+// src/data/modules.js
+export const MODULES = {
+  dashboard: {
+    title:   "Dashboard Overview",
+    desc:    "Real-time KPIs, AI alerts, and margin health across all locations.",
+    metrics: ["$4.7M Stock", "3 Alerts", "1,847 SKUs"],
+    panel:   "DashboardPanel",
+  },
+  inventory: {
+    title:   "Inventory Control",
+    desc:    "Live stock levels, batch tracking, and threshold alerts.",
+    metrics: ["842 Healthy", "3 Critical", "Auto-reorder On"],
+    panel:   "InventoryPanel",
+  },
+  supplier: {
+    title:   "Supplier Hub",
+    desc:    "Manage vendor relationships and automate PO workflows.",
+    metrics: ["4 Active", "4.9★ Top Rated", "3d Lead Time"],
+    panel:   "SupplierPanel",
+  },
+};
+
+2.4.2  ModuleDemo Component
+// src/components/ModuleDemo.jsx
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MODULES } from "../data/modules";
+import { DashboardPanel, InventoryPanel, SupplierPanel } from "./Panels";
+
+const panelComponents = {
+  DashboardPanel, InventoryPanel, SupplierPanel
+};
+
+export default function ModuleDemo() {
+  const [active, setActive] = useState("dashboard");
+  const mod = MODULES[active];
+  const Panel = panelComponents[mod.panel];
+
+  return (
+    <div className="modules-layout">
+      {/* Left: Tabs */}
+      <div className="module-tabs">
+        {Object.entries(MODULES).map(([key, m], i) => (
+          <div
+            key={key}
+            className={`mod-tab ${active === key ? "active" : ""}`}
+            onClick={() => setActive(key)}
+          >
+            <span className="mod-num">0{i + 1}</span>
+            <div>
+              <div className="mod-title">{m.title}</div>
+              {/* Description only shows on active (doc spec: dynamically updates) */
+              {active === key && (
+                <motion.p
+                  className="mod-desc"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {m.desc}
+                </motion.p>
+              )}
+              {/* Metrics pills (doc spec: dynamically updates metrics) */
+              {active === key && (
+                <motion.div
+                  className="mod-metrics"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                >
+                  {m.metrics.map(pill => (
+                    <span key={pill} className="mod-pill">{pill}</span>
+                  ))}
+                </motion.div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Right: Display panel with animated swap */
+      <div className="mod-display">
+        <div className="mod-topbar">
+          <span className="dot red"/><span className="dot yellow"/><span className="dot green"/>
+          <span className="mod-label">{mod.title}</span>
+        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={active}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Panel />
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+3. Login & Authentication Page — Implementation Guide
+The login page is a full-viewport split-screen. The left half hosts a Three.js 3D neural network visualization. The right half holds a multi-state form controller that handles Login, Signup, Forgot Password, and OTP within a single component with smooth transitions.
+
+3.1  Split-Screen Layout
+.login-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.canvas-side {
+  position: relative;
+  overflow: hidden;
+}
+
+.form-side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(10,10,25,0.98), rgba(5,5,15,1));
+  border-left: 1px solid rgba(255,255,255,0.07);
+  padding: 40px;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .login-layout { grid-template-columns: 1fr; }
+  .canvas-side  { display: none; }
+}
+
+3.2  Left Panel — Three.js Neural Network Visualization
+What to Build
+A full-panel WebGL canvas with a 3D neural network of 90 nodes.
+4 node types: Cyan (regular), Purple (hub nodes — larger), Pink (leaf), Green (data).
+Dynamic edge rendering: lines drawn between nearby nodes, opacity proportional to distance.
+Pulsing scale and emissive glow on each node, each with its own phase and speed.
+Data pulse particles that travel along edges from node to node.
+3 coloured point lights (cyan, purple, pink) that orbit the scene continuously.
+Mouse parallax: the scene responds to mouse position with a lag effect.
+
+3.2.1  Neural Network Setup
+// src/hooks/useNeuralNet.js
+import * as THREE from "three";
+import { useEffect, useRef } from "react";
+
+export function useNeuralNet(containerRef) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const NODE_COUNT = 90;
+    const MAX_DIST   = 10;
+
+    const scene    = new THREE.Scene();
+    const camera   = new THREE.PerspectiveCamera(55, 1, 0.1, 1000);
+    camera.position.set(0, 0, 38);
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: canvasRef.current, antialias: true, alpha: true
+    });
+    renderer.setClearColor(0x000000, 0);
+
+    // Four node types with distinct visual identities
+    const NODE_TYPES = [
+      { color: 0x00d4ff, emissive: 0x003355, size: 0.35 }, // Cyan — regular
+      { color: 0x7928ca, emissive: 0x1a0033, size: 0.50 }, // Purple — hub (largest)
+      { color: 0xff3e78, emissive: 0x330015, size: 0.28 }, // Pink — leaf
+      { color: 0x00dc82, emissive: 0x003322, size: 0.40 }, // Green — data
+    ];
+
+    // Fibonacci sphere distribution for even node spacing
+    const nodes = [];
+    for (let i = 0; i < NODE_COUNT; i++) {
+      const phi   = Math.acos(1 - 2 * (i + 0.5) / NODE_COUNT);
+      const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+      const r     = 18 + (Math.random() - 0.5) * 10;
+      const type  = NODE_TYPES[Math.floor(Math.random() * NODE_TYPES.length)];
+
+      const mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(type.size, 12, 12),
+        new THREE.MeshPhongMaterial({
+          color: type.color,
+          emissive: type.emissive,
+          emissiveIntensity: 0.8,
+          transparent: true,
+          opacity: 0.85,
+        })
+      );
+      mesh.position.set(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.sin(phi) * Math.sin(theta),
+        r * Math.cos(phi)
+      );
+      mesh.userData = {
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.3 + Math.random() * 0.4,
+      };
+      scene.add(mesh);
+      nodes.push(mesh);
+    }
+
+    // ... (edge lines, pulse particles, animate loop — see Section 3.2.2)
+  }, []);
+
+  return canvasRef;
+}
+
+3.2.2  Edge Lines + Pulse Particles
+    // Dynamic edge group — rebuilt every 10 frames
+    const edgeGroup = new THREE.Group();
+    scene.add(edgeGroup);
+
+    function buildEdges() {
+      while (edgeGroup.children.length) edgeGroup.remove(edgeGroup.children[0]);
+      for (let i = 0; i < NODE_COUNT; i++) {
+        for (let j = i + 1; j < NODE_COUNT; j++) {
+          const d = nodes[i].position.distanceTo(nodes[j].position);
+          if (d < MAX_DIST) {
+            const alpha = Math.pow(1 - d / MAX_DIST, 2) * 0.6;
+            const geo   = new THREE.BufferGeometry()
+                            .setFromPoints([nodes[i].position, nodes[j].position]);
+            const mat   = new THREE.LineBasicMaterial({
+              color: 0x00d4ff,
+              transparent: true,
+              opacity: alpha,
+              blending: THREE.AdditiveBlending,
+            });
+            edgeGroup.add(new THREE.Line(geo, mat));
+          }
+        }
+      }
+    }
+    buildEdges();
+
+    // Spawn a pulse particle every 400ms
+    const pulses = [];
+    function spawnPulse() {
+      const fromIdx = Math.floor(Math.random() * NODE_COUNT);
+      const from    = nodes[fromIdx].position.clone();
+      let   toIdx   = -1, minD = Infinity;
+      for (let j = 0; j < NODE_COUNT; j++) {
+        if (j === fromIdx) continue;
+        const d = from.distanceTo(nodes[j].position);
+        if (d < MAX_DIST && d < minD) { minD = d; toIdx = j; }
+      }
+      if (toIdx < 0) return;
+      const mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.18, 6, 6),
+        new THREE.MeshBasicMaterial({
+          color: 0x00ffff, transparent: true,
+          blending: THREE.AdditiveBlending
+        })
+      );
+      mesh.position.copy(from);
+      scene.add(mesh);
+      pulses.push({ mesh, from, to: nodes[toIdx].position.clone(), progress: 0 });
+    }
+    const pulseInterval = setInterval(spawnPulse, 400);
+
+    // Animation loop
+    let t = 0, frameCount = 0, frameId;
+    function animate() {
+      frameId = requestAnimationFrame(animate);
+      t += 0.006; frameCount++;
+
+      scene.rotation.y = t * 0.08;
+      scene.rotation.x = Math.sin(t * 0.05) * 0.12;
+
+      nodes.forEach(n => {
+        const s = 1 + Math.sin(t * n.userData.speed + n.userData.phase) * 0.2;
+        n.scale.setScalar(s);
+        n.material.emissiveIntensity = 0.5 + Math.sin(t * n.userData.speed + n.userData.phase) * 0.5;
+      });
+
+      if (frameCount % 10 === 0) buildEdges(); // periodic edge rebuild
+
+      for (let i = pulses.length - 1; i >= 0; i--) {
+        const p = pulses[i];
+        p.progress += 0.015;
+        if (p.progress >= 1) { scene.remove(p.mesh); pulses.splice(i, 1); }
+        else {
+          p.mesh.position.lerpVectors(p.from, p.to, p.progress);
+          p.mesh.material.opacity = Math.sin(p.progress * Math.PI); // fade in/out
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      clearInterval(pulseInterval);
+      renderer.dispose();
+    };
+
+3.3  Right Panel — Multi-State Form Controller
+What to Build
+A single React component manages 4 view states: "login", "signup", "forgot", "otp".
+State transitions are animated with Framer Motion AnimatePresence (fade + translateY).
+Each state has its own content: inputs, validation, error banners, and submit handler.
+Shared logic: email regex validation, loading spinner on submit, animated error banner with shake.
+
+3.3.1  Auth State Machine
+// src/pages/LoginPage.jsx
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { LoginForm, SignupForm, ForgotForm, OTPForm } from "./AuthForms";
+
+const VIEWS = {
+  login:  LoginForm,
+  signup: SignupForm,
+  forgot: ForgotForm,
+  otp:    OTPForm,
+};
+
+export default function LoginPage() {
+  const [view,   setView]  = useState("login");
+  const [email,  setEmail] = useState("");  // passed to OTP display
+
+  const Component = VIEWS[view];
+
+  return (
+    <div className="login-layout">
+      <NeuralNetCanvas />
+
+      <div className="form-side">
+        <div className="form-wrapper">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={view}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+            >
+              <Component
+                goTo={setView}
+                email={email}
+                setEmail={setEmail}
+              />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+3.3.2  Shared Validation Utilities
+// src/utils/validation.js
+
+// Email regex (doc spec: email regex validation)
+export const isValidEmail = (email) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+// Password strength entropy (doc spec: length + case + numbers + symbols)
+export function getPasswordStrength(password) {
+  let score = 0;
+  if (password.length >= 8)  score++;
+  if (password.length >= 12) score++;
+  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+  return Math.min(Math.floor(score * 0.9), 4); // 0-4 level
+}
+
+export const STRENGTH_LABELS = ["Too Weak", "Weak", "Fair", "Strong", "Very Strong"];
+export const STRENGTH_COLORS = ["#ff3e78", "#ff8c00", "#ffc800", "#00dc82", "#00dc82"];
+
+3.3.3  Password Strength Meter
+The meter calculates entropy based on length, character case, digits, and symbols — displaying 4 coloured segments with a label (doc spec).
+// src/components/PasswordStrength.jsx
+import { motion } from "framer-motion";
+import { getPasswordStrength, STRENGTH_LABELS, STRENGTH_COLORS } from "../utils/validation";
+
+export function PasswordStrength({ password }) {
+  const level  = getPasswordStrength(password);
+  const color  = STRENGTH_COLORS[level];
+  const label  = STRENGTH_LABELS[level];
+
+  return (
+    <div className="strength-wrap">
+      <div className="strength-bar">
+        {[0, 1, 2, 3].map(i => (
+          <motion.div
+            key={i}
+            className="strength-seg"
+            animate={{ background: i < level ? color : "rgba(255,255,255,0.08)" }}
+            transition={{ duration: 0.3 }}
+          />
+        ))}
+      </div>
+      <span className="strength-label" style={{ color }}>
+        {password ? label : "Enter a password"}
+      </span>
+    </div>
+  );
+}
+
+3.3.4  OTP Input Component
+The 6-digit OTP system implements: auto-focus on type, backspace navigation to previous field, and smart clipboard paste (doc spec).
+// src/components/OTPInput.jsx
+import { useRef } from "react";
+
+export function OTPInput({ value, onChange }) {
+  const inputs = useRef([]);
+
+  const handleInput = (e, idx) => {
+    const val = e.target.value.replace(/\D/g, "").slice(-1);
+    const newVal = value.split("");
+    newVal[idx] = val;
+    onChange(newVal.join(""));
+    // Auto-focus next on type
+    if (val && idx < 5) inputs.current[idx + 1].focus();
+  };
+
+  const handleKeyDown = (e, idx) => {
+    // Backspace navigation to previous input (doc spec)
+    if (e.key === "Backspace" && !value[idx] && idx > 0) {
+      inputs.current[idx - 1].focus();
+    }
+  };
+
+  const handlePaste = (e) => {
+    // Smart clipboard paste — fill all 6 digits at once (doc spec)
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    onChange(pasted.padEnd(6, "").slice(0, 6));
+    const focusIdx = Math.min(pasted.length, 5);
+    inputs.current[focusIdx].focus();
+  };
+
+  return (
+    <div className="otp-wrap">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <input
+          key={i}
+          ref={el => (inputs.current[i] = el)}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          className={`otp-input ${value[i] ? "filled" : ""}`}
+          value={value[i] || ""}
+          onChange={e => handleInput(e, i)}
+          onKeyDown={e => handleKeyDown(e, i)}
+          onPaste={handlePaste}
+        />
+      ))}
+    </div>
+  );
+}
+
+3.3.5  Animated Error Banner
+A shake animation fires whenever validation fails, providing immediate feedback (doc spec: "animated error banners for instantaneous user feedback").
+// src/components/ErrorBanner.jsx
+import { motion, AnimatePresence } from "framer-motion";
+
+const shake = {
+  initial: { opacity: 0, y: -6 },
+  animate: {
+    opacity: 1, y: 0,
+    x: [0, -6, 6, -4, 4, 0],    // shake keyframes
+    transition: {
+      opacity: { duration: 0.2 },
+      x: { duration: 0.4, ease: "easeInOut" },
+    },
+  },
+  exit: { opacity: 0, y: -4, transition: { duration: 0.2 } },
+};
+
+export function ErrorBanner({ message, show }) {
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div className="error-banner" {...shake}>
+          <span>⚠</span> {message}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+4. Backend — Auth & Security Implementation
+4.1  Express Auth Routes
+// server/routes/auth.js
+const router = require("express").Router();
+const { signup, login, forgotPassword, verifyOTP } = require("../controllers/auth");
+const rateLimit = require("express-rate-limit");
+
+// Protect login + OTP from brute-force (doc spec: rate limiting)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,   // 15 minutes
+  max: 10,                     // 10 attempts
+  message: { error: "Too many attempts. Try again in 15 minutes." }
+});
+
+router.post("/signup",          signup);
+router.post("/login",           authLimiter, login);
+router.post("/forgot-password", authLimiter, forgotPassword);
+router.post("/verify-otp",      authLimiter, verifyOTP);
+
+module.exports = router;
+
+4.2  Password Hashing with Bcryptjs
+// server/controllers/auth.js (signup)
+const bcrypt = require("bcryptjs");
+const jwt    = require("jsonwebtoken");
+const User   = require("../models/User");
+
+exports.signup = async (req, res) => {
+  try {
+    const { firstName, lastName, email, password } = req.body;
+
+    // Always validate on backend (never trust frontend-only)
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return res.status(400).json({ error: "Invalid email address" });
+
+    const exists = await User.findOne({ email });
+    if (exists) return res.status(409).json({ error: "Email already registered" });
+
+    const salt   = await bcrypt.genSalt(12);       // 12 rounds
+    const hashed = await bcrypt.hash(password, salt);
+
+    const user = await User.create({ firstName, lastName, email, password: hashed });
+
+    // Send OTP for email verification (via Bull queue)
+    await otpQueue.add("send-otp", { email, userId: user._id });
+
+    res.status(201).json({ message: "Account created. Check your email for OTP." });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+4.3  JWT — Secure Storage (Critical)
+Security Warning
+NEVER store JWT tokens in localStorage or sessionStorage.
+localStorage is accessible by any JavaScript on the page, making it vulnerable to XSS attacks.
+Always store the access token in an httpOnly cookie (not readable by JS).
+Use a short-lived access token (15 minutes) + a longer-lived refresh token (7 days) in a separate httpOnly cookie.
+
+// server/controllers/auth.js (login)
+exports.login = async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email }).select("+password");
+
+  if (!user || !(await bcrypt.compare(password, user.password)))
+    return res.status(401).json({ error: "Invalid credentials" });
+
+  const accessToken  = jwt.sign({ id: user._id }, process.env.JWT_SECRET,  { expiresIn: "15m" });
+  const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH, { expiresIn: "7d"  });
+
+  // httpOnly cookies — NOT accessible by JavaScript (XSS-safe)
+  res.cookie("accessToken",  accessToken,  {
+    httpOnly: true, secure: true, sameSite: "Strict", maxAge: 15 * 60 * 1000
+  });
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true, secure: true, sameSite: "Strict", maxAge: 7 * 24 * 60 * 60 * 1000
+  });
+
+  res.json({ user: { id: user._id, email: user.email, firstName: user.firstName } });
+};
+
+4.4  OTP with Redis + Bull Queue
+// server/queues/otpQueue.js
+const Bull = require("bull");
+const Redis = require("ioredis");
+const crypto = require("crypto");
+
+const redis    = new Redis(process.env.REDIS_URL);
+const otpQueue = new Bull("otp", { redis: { host: "localhost", port: 6379 } });
+
+otpQueue.process("send-otp", async (job) => {
+  const { email, userId } = job.data;
+
+  // Generate 6-digit OTP
+  const otp    = crypto.randomInt(100000, 999999).toString();
+  const expiry = 2 * 60;   // 2 minutes in seconds (120s)
+
+  // Store in Redis with TTL (auto-expires)
+  await redis.setex(`otp:${userId}`, expiry, otp);
+
+  // Send via email (Nodemailer / SendGrid / etc.)
+  await sendEmail({ to: email, subject: "Your NexusStock OTP", text: `Your code: ${otp}` });
+});
+
+// Verify OTP endpoint
+exports.verifyOTP = async (req, res) => {
+  const { userId, otp } = req.body;
+  const stored = await redis.get(`otp:${userId}`);
+
+  if (!stored)      return res.status(400).json({ error: "OTP expired. Please request a new one." });
+  if (stored !== otp) return res.status(400).json({ error: "Incorrect code. Please try again." });
+
+  await redis.del(`otp:${userId}`);  // one-time use
+  await User.findByIdAndUpdate(userId, { verified: true });
+
+  res.json({ message: "Verified successfully." });
+};
+
+module.exports = otpQueue;
+
+5. Animation Quick-Reference
+This section summarises every animation technique used across both pages for fast lookup.
+
+Animation
+Implementation
+Navbar glassmorphism trigger
+useScrolled(20) hook → .scrolled class → backdrop-filter: blur(24px)
+Hero title word entrance
+GSAP timeline → .from(".word", { y:90, stagger:0.1, ease:"power4.out" })
+Background text parallax
+ScrollTrigger scrub:1.5 → y:-90 as hero scrolls out
+KPI card entrance
+GSAP from y:60, ease:"back.out(1.5)" stagger:0.13
+KPI card CSS float
+@keyframes float-1/2/3 with different durations + animation-delay
+Feature card hover top-border
+.feat-card::before scaleX(0→1) on :hover, transform-origin:left
+Feature grid scroll reveal
+ScrollTrigger start:"top 82%" stagger:0.07 reverse on leave
+Interactive module panel swap
+Framer Motion AnimatePresence mode="wait" key={activeTab}
+Metric pill + desc appear
+Framer Motion motion.div initial:{opacity:0,y:6} on tab activate
+Parallax text strip
+ScrollTrigger scrub:1.2 → x:-18% over section scroll
+Stat counter
+GSAP gsap.to({v:0},{v:target}) onUpdate → el.textContent
+CTA glow parallax
+ScrollTrigger scrub:1 scale(1→1.5) opacity(1→0) over section
+Login form state transition
+AnimatePresence mode="wait" key={viewState} fade+y:-14→0→+14
+OTP auto-focus
+onChange → next input .focus() if value filled
+OTP backspace navigation
+onKeyDown → prev input .focus() if Backspace + no current value
+Password strength segments
+Framer Motion animate:{background:color} transition:{duration:0.3}
+Error banner shake
+Framer Motion animate:{x:[0,-6,6,-4,4,0]} duration:0.4
+Three.js pulse particles
+lerpVectors(from, to, progress) + opacity=sin(progress * PI)
+Three.js node pulse
+scale.setScalar(1 + sin(t*speed+phase)*0.22) each frame
+Mouse parallax on 3D scene
+mousemove → rotation.y lerp += (target - current) * 0.06
+
+
+5.1  CSS Variables — Root Setup
+/* src/styles/globals.css */
+:root {
+  /* Colours */
+  --bg:        #04050a;
+  --bg2:       #07080f;
+  --bg3:       #0a0b14;
+  --orange:    #ff6b1a;
+  --orange2:   #ff9d52;
+  --amber:     #ffb830;
+  --cyan:      #00e5ff;
+  --green:     #00dc82;
+  --red:       #ff4757;
+  --text:      #ede9e3;
+  --muted:     #5c5a58;
+  --border:    rgba(255,255,255,0.07);
+  --glass:     rgba(8,8,18,0.75);
+
+  /* Typography */
+  --font-display: "Anton", sans-serif;       /* headings, giant text */
+  --font-ui:      "Barlow Condensed", sans-serif; /* labels, badges, nav */
+  --font-body:    "DM Sans", sans-serif;     /* body copy, inputs */
+
+  /* Shadows */
+  --glow-orange: 0 0 40px rgba(255,107,26,0.3);
+  --glow-cyan:   0 0 30px rgba(0,229,255,0.2);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+
+6. Implementation Checklist
+Use this checklist to track your build progress from start to production.
+
+6.1  Project Setup
+Create Vite + React project with npm create vite@latest nexusstock -- --template react
+Install all frontend packages: react-router-dom, framer-motion, three, gsap, lucide-react, recharts, axios
+Install all backend packages: express, mongoose, bcryptjs, jsonwebtoken, redis, bull, socket.io, groq-sdk
+Set up folder structure: src/components, src/pages, src/hooks, src/animations, src/data, server/
+Configure CSS variables in globals.css
+Install Google Fonts: Anton + Barlow Condensed + DM Sans via @import
+
+6.2  Landing Page
+Build useScrolled(20) hook
+Build Navbar with glassmorphism transition at 20px scroll
+Build Hero split layout (grid-template-columns: 1fr 1fr)
+Add animated gradient span to "Total Inventory Control"
+Build 4 KPI cards with unique float animation timings
+Initialise Three.js orb in useThreeOrb hook + mount on hero canvas
+Wire up GSAP hero entrance timeline (7 steps)
+Add scroll parallax on bg text, hero-left, hero-right using ScrollTrigger scrub
+Build Features Grid (3x2) with soft-coloured icon backgrounds
+Add ::before top-border sweep on feat-card hover
+Wire GSAP stagger reveal on feat-grid via ScrollTrigger start:"top 82%"
+Build ModuleDemo with 3 tabs (Dashboard, Inventory, Supplier)
+Implement dynamic description + metrics update on tab click
+Wrap panel content in AnimatePresence mode="wait" for animated swap
+Add parallax text strip with ScrollTrigger x:-18%
+Add stat counters with gsap.to number interpolation on scroll enter
+Build CTA section with glow parallax
+Build Footer with 4-column grid
+
+6.3  Login Page
+Build split layout (grid-template-columns: 1fr 1fr)
+Initialise Three.js neural network in useNeuralNet hook
+Configure 4 node types with Fibonacci sphere distribution
+Implement dynamic edge lines (rebuilt every 10 frames)
+Add pulse particle system with setInterval(spawnPulse, 400)
+Add mouse parallax via mousemove + lerp rotation
+Build auth state machine: login / signup / forgot / otp
+Wrap all state transitions in AnimatePresence mode="wait"
+Build PasswordStrength component with 4 coloured segments
+Build OTPInput with auto-focus, backspace nav, clipboard paste
+Build ErrorBanner with shake animation
+Add email regex validation on frontend AND backend
+Implement bcryptjs hashing (12 salt rounds) in signup controller
+Store JWTs in httpOnly cookies — NEVER localStorage
+Set up Redis + Bull OTP queue with 120-second TTL
+Add express-rate-limit on /login and /verify-otp routes
+
+
+
+End of Implementation Guide
+NexusStock  ·  Technical Documentation  ·  2025

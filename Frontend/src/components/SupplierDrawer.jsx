@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Line } from 'recharts';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { X, Zap } from 'lucide-react';
 
@@ -14,6 +15,7 @@ export default function SupplierDrawer({ supplier, onClose }) {
 
     useEffect(() => {
         if (!supplier) return;
+        // eslint-disable-next-line
         setLoading(true);
         axios.get(`${FLASK}/api/supplier/history/${encodeURIComponent(supplier.supplierName)}`)
             .then(res => setHistory(res.data.trend || []))

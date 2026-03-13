@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Search, Filter, ArrowUpDown, ChevronRight, Activity, Globe } from 'lucide-react';
 import RiskBar from './RiskBar';
 import { useSupplierRisk } from '../context/SupplierRiskContext';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SupplierTable({ onViewProfile }) {
@@ -89,7 +90,7 @@ export default function SupplierTable({ onViewProfile }) {
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead>
                         <tr style={{ background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
-                            {['supplierName', 'delayRiskScore', 'qualityRiskScore', 'fulfillmentRate', 'overallRiskScore'].map((key, i) => (
+                            {['supplierName', 'delayRiskScore', 'qualityRiskScore', 'fulfillmentRate', 'overallRiskScore'].map((key) => (
                                 <th key={key} onClick={() => handleSort(key)} style={{ padding: '16px 24px', fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                         {key === 'supplierName' ? 'Supplier Entity' : key.replace(/RiskScore|Rate|Score/g, '')}

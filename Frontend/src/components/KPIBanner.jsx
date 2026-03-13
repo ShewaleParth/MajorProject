@@ -1,5 +1,6 @@
 import { AlertCircle, Clock, ShieldAlert, CreditCard, Layers } from 'lucide-react';
 import { useSupplierRisk } from '../context/SupplierRiskContext';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 
 export default function KPIBanner() {

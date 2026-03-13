@@ -1,0 +1,22 @@
+SANGRAHAK: Platform Details
+1. Technology Stack
+Frontend Architecture
+• Core Framework: React (v19.2.0)• Build Tool: Vite (v7.3.1)• Routing: React Router DOM (v7.11.0)• Animations: Framer Motion (v12.35.2) for smooth UI transitions• Icons: Lucide React (v0.562.0)• Data Visualization: Recharts (v3.8.0)• HTTP Client: Axios (v1.13.2)
+Backend & Intelligence
+• Runtime: Node.js with Express (v5.2.1)• Database: MongoDB with Mongoose (v8.20.4)• Authentication: JSON Web Token (JWT) & Bcryptjs• Task Queue/Caching: Redis & Bull/BullMQ• Real-time Interaction: Socket.io• AI SDK: Groq-SDK for intelligent insights and forecasting
+2. Landing Page Implementation
+The landing page is designed to represent a premium enterprise platform, focusing on visual excellence and high interaction.
+Section Details:
+Navbar: Features a "scrolled" state using React hooks that applies glassmorphism effects (backdrop-filter) and bottom borders when the user scrolls beyond 20px.
+Hero Section: Uses a split layout. The left side contains high-impact copy with a gradient span ("Total Inventory Control"). The right side features floating KPI cards with CSS animations representing real-time stock value and accuracy.
+Features Grid: A categorized grid showcasing "Platform Capabilities". Each card uses custom icons with soft-colored backgrounds and hover effects.
+Interactive Modules: A deep-dive section allowing users to toggle between Dashboard, Inventory, and Supplier views. It dynamically updates descriptions and metrics based on the active tab.
+3. Login & Authentication Page
+The authentication system is a comprehensive module managing user access, security, and account creation.
+Design and Visuals:
+Split-Screen Experience: The left panel hosts a complex "Data Flow" visualization built with SVG and CSS. It includes animated paths, glowing orbs, and pulsing data nodes representing the AI core.
+Interactive Form: A multi-state controller handles "Login", "Signup", "Forgot Password", and "OTP Verification" within a single elegant wrapper with smooth state transitions.
+Technical Features:
+Password Strength Meter: Calculates entropy based on length, case, numbers, and symbols, providing real-time feedback with colored segments.
+OTP Intelligence: The 6-digit verification system supports auto-focus on typing, backspace navigation, and smart clipboard paste support for a frictionless experience.
+Security & UX: Includes email regex validation, password matching checks, and animated error banners for instantaneous user feedback.

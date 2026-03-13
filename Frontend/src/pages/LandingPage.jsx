@@ -1,275 +1,452 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Network, Search, FileText, Activity, ShieldAlert, Cpu } from 'lucide-react';
-import './LandingPage.css';
+import React, { useState, useEffect, useRef } from "react";
+/* eslint-disable no-unused-vars */
+import { motion } from "framer-motion";
+import { 
+  ShieldCheck, 
+  Zap, 
+  Layers, 
+  Bell, 
+  TrendingUp, 
+  Box,
+  BrainCircuit,
+  Lock,
+  Globe,
+} from "lucide-react";
+import { 
+  AreaChart, Area, ResponsiveContainer 
+} from 'recharts';
+import "./LandingPage.css";
+import logo from "../assets/logo.png";
 
-const LandingPage = () => {
-  const navigate = useNavigate();
+// --- Mock Data ---
+const CHART_DATA = [
+  { name: 'Mon', value: 400 }, { name: 'Tue', value: 300 }, { name: 'Wed', value: 600 },
+  { name: 'Thu', value: 800 }, { name: 'Fri', value: 500 }, { name: 'Sat', value: 900 },
+  { name: 'Sun', value: 700 },
+];
+
+const FEATURES = [
+  { icon: <BrainCircuit size={28} />, title: "AI Demand Forecasting", desc: "Predict stock requirements with 98% accuracy using our advanced multi-layered neural networks." },
+  { icon: <ShieldCheck size={28} />, title: "Smart Supplier Radar", desc: "Detect vendor risks before they impact your supply chain with automated performance screening." },
+  { icon: <Zap size={28} />, title: "Real-time Sync Engine", desc: "Experience sub-50ms latency across global depots with our optimized distributed database sync." },
+  { icon: <Layers size={28} />, title: "Warehouse Heatmaps", desc: "Visualize storage efficiency and bottleneck areas with real-time 3D topographic mapping." },
+  { icon: <Bell size={28} />, title: "Intelligent Alerts", desc: "Context-aware notification system that filters noise and highlights critical inventory shifts." },
+  { icon: <TrendingUp size={28} />, title: "Margin Optimization", desc: "Automatically calculate COGS and capital tied in slow-moving stock to maximize liquidity." }
+];
+
+// --- Sub Components ---
+
+const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
-  
+
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleSignIn = () => navigate('/login');
-  const handleGetStarted = () => navigate('/login?tab=signup');
-  
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  return (
+    <motion.nav 
+      className={`navbar-fixed ${scrolled ? "navbar-scrolled" : ""}`}
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+    >
+      <div className="nav-logo" onClick={() => window.scrollTo({top:0, behavior:'smooth'})}>
+        <img src={logo} alt="S Logo" className="logo-img" />
+        <h2>SANGRAHAK</h2>
+      </div>
+      <div className="nav-links">
+        <a href="#platform" className="nav-link">Platform</a>
+        <a href="#workflow" className="nav-link">Intelligence</a>
+        <a href="#security" className="nav-link">Security</a>
+      </div>
+      <div className="nav-cta">
+        <button onClick={() => window.location.href='/login'}>Get Started</button>
+      </div>
+    </motion.nav>
+  );
+};
 
-  const modulesData = {
-    dashboard: {
-      title: 'Executive Dashboard',
-      description: 'A comprehensive operational overview with real-time tracking, KPI cards, and critical alerts at your fingertips.',
-      metrics: [
-        { label: 'Latency', value: '120ms' },
-        { label: 'Insights', value: '2.4M' },
-        { label: 'Uptime', value: '99.9%' }
-      ]
-    },
-    inventory: {
-      title: 'Total Inventory Control',
-      description: 'Track stock levels, valuation, and movements across all your depots with AI-driven categorisation and forecasting.',
-      metrics: [
-        { label: 'Active SKUs', value: '14,289' },
-        { label: 'Accuracy', value: '99.2%' },
-        { label: 'Turnover', value: '4.8x' }
-      ]
-    },
-    supplier: {
-      title: 'Supplier Risk Radar',
-      description: 'Continuous monitoring of supplier performance, delay probabilities, and quality metrics using predictive modeling.',
-      metrics: [
-        { label: 'Suppliers', value: '184' },
-        { label: 'Risk Flags', value: '12' },
-        { label: 'Avg Delay', value: '2.1d' }
-      ]
-    }
+const FeatureCard = ({ icon, title, desc }) => {
+  const cardRef = useRef(null);
+
+  const handleMouseMove = (e) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    cardRef.current.style.setProperty("--mouse-x", `${x}px`);
+    cardRef.current.style.setProperty("--mouse-y", `${y}px`);
   };
 
   return (
-    <div className="landing-page">
-      {/* SECTION 1: Navbar */}
-      <nav className={`landing-nav ${scrolled ? 'scrolled' : ''}`}>
-        <div className="landing-container nav-content">
-          <div className="nav-logo" onClick={scrollToTop}>
-            <div className="logo-s">S</div>
-            <strong style={{ fontSize: '18px', tracking: '1px' }}>SANGRAHAK</strong>
-          </div>
-          
-          <div className="nav-links">
-            <a href="#features" className="nav-link">Features</a>
-            <a href="#modules" className="nav-link">Modules</a>
-            <a href="#reports" className="nav-link">Reports</a>
-            <a href="#contact" className="nav-link">Contact</a>
-          </div>
+    <motion.div 
+      ref={cardRef}
+      className="feature-card"
+      onMouseMove={handleMouseMove}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+    >
+      <div className="spotlight-mask"></div>
+      <div className="feature-icon">{icon}</div>
+      <h3 className="feature-title">{title}</h3>
+      <p className="feature-desc">{desc}</p>
+    </motion.div>
+  );
+};
 
-          <div className="nav-cta-group">
-            <button className="btn-signin" onClick={handleSignIn}>Sign In</button>
-            <button className="btn-primary" onClick={handleGetStarted}>Get Started &rarr;</button>
-          </div>
-          
-          <button className="mobile-menu-btn">☰</button>
-        </div>
-      </nav>
+// --- Landing Page ---
 
-      {/* SECTION 2: Hero */}
-      <section className="hero-section landing-container">
-        <div className="hero-copy">
-          <div className="hero-badge">
-            <Activity size={14} style={{ marginRight: '6px' }} />
-            AI-Powered Inventory Intelligence
-          </div>
-          <h1 className="text-h1">
-            Intelligent Logistics,<br />
-            <span className="text-gradient">Total Inventory Control</span>
-          </h1>
-          <p className="hero-subtext">
-            Transform your supply chain with predictive insights, real-time tracking, and automated risk assessment designed for enterprise scale.
-          </p>
-          <div className="hero-ctas">
-            <button className="btn-primary btn-hero" onClick={handleGetStarted}>Start Free &rarr;</button>
-            <button className="btn-outline btn-hero" style={{ paddingLeft: '32px', paddingRight: '32px' }} onClick={handleSignIn}>Watch Demo &#9654;</button>
-          </div>
-          <div className="social-proof">
-            &#10003; Used by 3 depots &middot; No credit card &middot; MIT License
-          </div>
-        </div>
+export default function LandingPage() {
+  const rootRef = useRef(null);
+
+  const handleGlobalMouseMove = (e) => {
+    if (!rootRef.current) return;
+    rootRef.current.style.setProperty("--mouse-x", `${e.clientX}px`);
+    rootRef.current.style.setProperty("--mouse-y", `${e.clientY}px`);
+  };
+
+  return (
+    <div className="landing-root" ref={rootRef} onMouseMove={handleGlobalMouseMove}>
+      <div className="cursor-glow"></div>
+      <Navbar />
+
+      {/* Hero Section */}
+      <section className="hero-container">
+        <div className="hero-glow-blob blob-1"></div>
+        <div className="hero-glow-blob blob-2"></div>
         
-        <div className="hero-visuals">
-          <div className="kpi-card float-1">
-            <span className="kpi-label">Total Stock Value</span>
-            <span className="kpi-val">&#8377;2.4 Cr</span>
-            <span className="kpi-delta delta-pos">&#9650; 12.3% this month</span>
-          </div>
-          <div className="kpi-card float-2">
-            <span className="kpi-label">Active Suppliers</span>
-            <span className="kpi-val">19</span>
-            <span className="kpi-delta delta-neg">&#9660; 2 at risk</span>
-          </div>
-          <div className="kpi-card float-3">
-            <span className="kpi-label">Forecast Accuracy</span>
-            <span className="kpi-val">94.2%</span>
-            <span className="kpi-delta delta-pos">&#9650; 1.8% vs last quarter</span>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 3: Stats Strip */}
-      <section className="stats-strip">
-        <div className="landing-container stats-grid">
-          <div>
-            <div className="stat-val">2.4Cr</div>
-            <div className="stat-label">Stock Value Analyzed</div>
-          </div>
-          <div>
-            <div className="stat-val">94%</div>
-            <div className="stat-label">Forecast Accuracy</div>
-          </div>
-          <div>
-            <div className="stat-val">10ms</div>
-            <div className="stat-label">Query Latency</div>
-          </div>
-          <div>
-            <div className="stat-val">24/7</div>
-            <div className="stat-label">Supplier Monitoring</div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 4: Features Grid */}
-      <section id="features" className="features-section landing-container">
-        <div className="section-header">
-          <h2>Platform Capabilities</h2>
-          <p>Everything you need to manage your logistics operation in one unified platform.</p>
-        </div>
-        
-        <div className="features-grid">
-          {[
-            { icon: <Network color="#2563EB" />, color: '#2563EB', title: 'Real-time Tracking', desc: 'Monitor depot movements across your entire network precisely instantly.' },
-            { icon: <Cpu color="#0EA5E9" />, color: '#0EA5E9', title: 'AI Forecasting', desc: 'Predictive modeling algorithms accurately estimate future demand and reduce stockouts.' },
-            { icon: <ShieldAlert color="#F59E0B" />, color: '#F59E0B', title: 'Risk Radar', desc: 'Identify supplier delays and quality degradation before they impact operations.' },
-            { icon: <Search color="#10B981" />, color: '#10B981', title: 'Deep Search', desc: 'Find any SKU instantly with our high performance fuzzy search indexing.' },
-            { icon: <Activity color="#8B5CF6" />, color: '#8B5CF6', title: 'Live Dashboard', desc: 'Executive metrics beautifully visualised for rapid decision making.' },
-            { icon: <FileText color="#EC4899" />, color: '#EC4899', title: 'Export Reports', desc: 'Generate compliance ready PDF and XLSX reports with one click.' },
-          ].map((feat, i) => (
-            <div className="feature-card" key={i}>
-              <div className="feature-icon-box" style={{ background: `${feat.color}22` }}>
-                {feat.icon}
-              </div>
-              <h3>{feat.title}</h3>
-              <p>{feat.desc}</p>
+        <div className="hero-left">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease: [0.23, 1, 0.32, 1] }}
+          >
+            <h1 className="hero-heading">
+              <span>Total Inventory</span>
+              <span className="text-gradient">Control</span>
+              <span>Powered by AI</span>
+            </h1>
+            <p className="hero-sub">
+              SANGRAHAK orchestrates supply chain complexity, predicts demand with surgical precision,
+              and tracks assets in real-time across global depots.
+            </p>
+            <div className="hero-cta">
+              <button className="btn-primary" onClick={() => window.location.href='/login'}>
+                Get Started
+              </button>
+              <button className="btn-secondary">View Demo</button>
             </div>
+          </motion.div>
+        </div>
+
+        <div className="hero-right">
+          {/* Floating KPI Cards */}
+          <motion.div 
+            className="floating-kpi"
+            style={{ top: '10%', left: '5%' }}
+            animate={{ y: [0, -25, 0], rotate: [0, 1, 0] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <div className="kpi-label">Inventory Accuracy</div>
+            <div className="kpi-value text-gradient">98.7%</div>
+          </motion.div>
+
+          <motion.div 
+            className="floating-kpi"
+            style={{ top: '40%', right: '10%' }}
+            animate={{ y: [0, 25, 0], rotate: [0, -1, 0] }}
+            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+          >
+            <div className="kpi-label">Real-Time Stock Value</div>
+            <div className="kpi-value">₹2.4 Cr</div>
+          </motion.div>
+
+          <motion.div 
+            className="floating-kpi"
+            style={{ bottom: '15%', left: '15%' }}
+            animate={{ y: [0, -20, 0], rotate: [0, 0.5, 0] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          >
+            <div className="kpi-label">Prediction Confidence</div>
+            <div className="kpi-value">92%</div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Platform Capabilities */}
+      <section className="modules-container" id="platform">
+        <div style={{ textAlign: 'center', marginBottom: 100 }}>
+          <h2 className="hero-heading" style={{ fontSize: '3.5rem', marginBottom: 20 }}>Enterprise Capabilities</h2>
+          <p className="hero-sub" style={{ margin: '0 auto' }}>Autonomous logistics powered by neural decision engines.</p>
+        </div>
+        <div className="features-grid">
+          {FEATURES.map((feat, i) => (
+            <FeatureCard key={i} {...feat} />
           ))}
         </div>
       </section>
 
-      {/* SECTION 5: Modules (Interactive) */}
-      <section id="modules" className="modules-section">
-        <div className="landing-container">
-          <div className="section-header">
-            <h2>Deep Dive Modules</h2>
-            <p>Purpose built interfaces for every logistics workflow.</p>
-          </div>
-          
-          <div className="modules-tabs">
-            {['dashboard', 'inventory', 'supplier'].map((tab) => (
-              <div 
-                key={tab}
-                className={`module-tab ${activeTab === tab ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab)}
+      {/* Product Preview Section (Replacing Heatmap/Modules) */}
+      <section className="product-preview-container" id="modules">
+        <div className="preview-grid">
+          <motion.div 
+            className="preview-left"
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+          >
+            <span className="preview-tag">Inventory Intelligence</span>
+            <h2 className="preview-heading">Smarter Inventory Management with AI</h2>
+            <p className="preview-desc">
+              SANGRAHAK uses predictive intelligence to monitor stock levels,
+              detect supply chain risks, and automate procurement decisions
+              across multiple depots.
+            </p>
+            <div className="hero-cta" style={{ gap: 20 }}>
+              <button className="btn-primary" onClick={() => window.location.href='/login'}>
+                Get Started
+              </button>
+              <button className="btn-secondary">View Demo</button>
+            </div>
+          </motion.div>
+
+          <div className="preview-right">
+            <div className="preview-card-stack">
+              {/* Back Card */}
+              <motion.div 
+                className="back-card"
+                animate={{ 
+                  y: [0, -15, 0],
+                  rotate: [3, 2, 3]
+                }}
+                transition={{ 
+                  duration: 6, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+              />
+
+              {/* Main Card */}
+              <motion.div 
+                className="main-card"
+                initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true }}
+                whileHover={{ 
+                  y: -8,
+                  scale: 1.02,
+                  transition: { duration: 0.4 }
+                }}
+                transition={{ duration: 0.8, delay: 0.2, ease: [0.23, 1, 0.32, 1] }}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </div>
-            ))}
-          </div>
-          
-          <div className="module-content-grid">
-            <div className="module-info">
-              <h3>{modulesData[activeTab].title}</h3>
-              <p>{modulesData[activeTab].description}</p>
-              <div className="module-metrics">
-                {modulesData[activeTab].metrics.map((m, i) => (
-                  <div className="mini-metric" key={i}>
-                    <span>{m.label}</span>
-                    <strong>{m.value}</strong>
+                {/* Inventory Health */}
+                <div className="card-component">
+                  <div className="component-label">
+                    <Box size={14} /> Inventory Health
                   </div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="module-visual">
-              <div className="visual-mock">
-                 <div style={{ position: 'absolute', bottom: '20%', left: '10%', right: '10%', height: '2px', background: '#334155' }}></div>
-                 <div style={{ position: 'absolute', bottom: '20%', left: '20%', height: '40%', width: '4px', background: '#0EA5E9' }}></div>
-                 <div style={{ position: 'absolute', bottom: '20%', left: '40%', height: '60%', width: '4px', background: '#0EA5E9' }}></div>
-                 <div style={{ position: 'absolute', bottom: '20%', left: '60%', height: '30%', width: '4px', background: '#0EA5E9' }}></div>
-                 <div style={{ position: 'absolute', bottom: '20%', left: '80%', height: '50%', width: '4px', background: '#0EA5E9' }}></div>
-              </div>
+                  <div className="health-val text-gradient">98.7%</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--emerald)' }}>Accuracy +2.4% vs LW</div>
+                </div>
+
+                {/* Stock Forecast */}
+                <div className="card-component">
+                  <div className="component-label">
+                    <TrendingUp size={14} /> Stock Forecast
+                  </div>
+                  <div className="forecast-mini">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={CHART_DATA.slice(0, 5)}>
+                        <Area 
+                          type="monotone" 
+                          dataKey="value" 
+                          stroke="var(--primary-mid)" 
+                          fill="var(--primary-glow)" 
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Smart Alerts */}
+                <div className="card-component" style={{ gridColumn: 'span 2' }}>
+                  <div className="component-label">
+                    <Bell size={14} /> Smart Alerts
+                  </div>
+                  <div className="alert-item">
+                    <div className="dot" style={{ background: 'var(--danger)' }}></div>
+                    <span>Supplier delay risk detected (Zenith Global)</span>
+                  </div>
+                  <div className="alert-item">
+                    <div className="dot" style={{ background: 'var(--amber)' }}></div>
+                    <span>Reorder recommended in 4 days (Depot A)</span>
+                  </div>
+                </div>
+
+                {/* Depot Activity Overlay (Pseudo Component) */}
+                <div style={{ 
+                  gridColumn: 'span 2', 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  padding: '0 10px',
+                  fontSize: '0.8rem',
+                  color: 'var(--text-muted)'
+                }}>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                     <div className="dot" style={{ background: 'var(--emerald)', boxShadow: '0 0 10px var(--emerald)' }}></div>
+                     Active Depots: 24
+                   </div>
+                   <span>Live Updates Enabled</span>
+                </div>
+              </motion.div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 7: CTA Banner */}
-      <section className="cta-banner">
-        <div className="landing-container">
-          <h2>Ready to upgrade your logistics?</h2>
-          <div className="hero-ctas" style={{ justifyContent: 'center' }}>
-            <button className="btn-primary btn-hero" onClick={handleGetStarted}>Get Started Free &rarr;</button>
+
+      {/* Autonomous Workflow Section */}
+      <section className="workflow-container" id="workflow">
+        <div style={{ textAlign: 'center' }}>
+          <span className="preview-tag">The Process</span>
+          <h2 className="preview-heading" style={{ fontSize: '3rem' }}>How SANGRAHAK Optimizes</h2>
+          <p className="preview-desc" style={{ margin: '0 auto' }}>From raw data to autonomous orchestration in three distinct layers.</p>
+        </div>
+
+        <div className="workflow-steps">
+          {[
+            { 
+              icon: <Zap size={32} />, 
+              title: "Unified Ingestion", 
+              desc: "Seamlessly aggregates data from ERPs, hardware sensors, and global transport APIs into a single source of truth." 
+            },
+            { 
+              icon: <BrainCircuit size={32} />, 
+              title: "Neural Analysis", 
+              desc: "Our predictive engine identifies patterns, predicts demand spikes, and flags potential supply chain bottlenecks." 
+            },
+            { 
+              icon: <Layers size={32} />, 
+              title: "Smart Orchestration", 
+              desc: "Automatically moves stock, adjusts reorder points, and alerts stakeholders before issues even manifest." 
+            }
+          ].map((step, i) => (
+            <motion.div 
+              key={i}
+              className="workflow-step"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: i * 0.2 }}
+            >
+              <div className="step-icon-wrap">{step.icon}</div>
+              <h3 className="step-title">{step.title}</h3>
+              <p className="step-desc">{step.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="modules-container">
+        <div className="cta-box">
+          <h2>Start Managing Inventory <span className="text-gradient">Intelligently</span></h2>
+          <div className="hero-cta" style={{ justifyContent: 'center' }}>
+            <button className="btn-primary" onClick={() => window.location.href='/login'}>
+                Get Started Now
+            </button>
+            <button className="btn-secondary">
+                Request Demo
+            </button>
           </div>
         </div>
       </section>
 
-      {/* SECTION 8: Footer */}
-      <footer className="landing-footer">
-        <div className="landing-container">
-          <div className="footer-grid">
-            <div className="footer-brand">
-               <div className="nav-logo">
-                <div className="logo-s">S</div>
-                <strong style={{ fontSize: '18px', tracking: '1px' }}>SANGRAHAK</strong>
-              </div>
-              <p>AI-Powered Logistics Management<br/>System for modern enterprises.</p>
-            </div>
-            <div>
-              <div className="footer-title">Product</div>
-              <ul className="footer-links">
-                <li><a href="#features">Features</a></li>
-                <li><a href="#modules">Modules</a></li>
-                <li><a href="#reports">Reports</a></li>
-                <li><a href="#">API Docs</a></li>
-              </ul>
-            </div>
-            <div>
-              <div className="footer-title">Company</div>
-              <ul className="footer-links">
-                <li><a href="#">GitHub</a></li>
-                <li><a href="#">License</a></li>
-                <li><a href="#">Contact</a></li>
-              </ul>
-            </div>
-            <div>
-              <div className="footer-title">Tech</div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{ background: '#1E293B', padding: '4px 12px', borderRadius: '12px', fontSize: '12px', color: '#94A3B8' }}>React</span>
-                <span style={{ background: '#1E293B', padding: '4px 12px', borderRadius: '12px', fontSize: '12px', color: '#94A3B8' }}>Node.js</span>
-                <span style={{ background: '#1E293B', padding: '4px 12px', borderRadius: '12px', fontSize: '12px', color: '#94A3B8' }}>Python</span>
-                <span style={{ background: '#1E293B', padding: '4px 12px', borderRadius: '12px', fontSize: '12px', color: '#94A3B8' }}>MongoDB</span>
-              </div>
-            </div>
+      {/* Security & Scale Section */}
+      <section className="product-preview-container" id="security">
+        <div style={{ textAlign: 'center' }}>
+          <span className="preview-tag">Infrastructure</span>
+          <h2 className="preview-heading" style={{ fontSize: '3rem' }}>Engineered for the Enterprise</h2>
+          <p className="preview-desc" style={{ margin: '0 auto' }}>SANGRAHAK provides the reliability and security required by global supply chain leaders.</p>
+        </div>
+
+        <div className="security-grid">
+          {[
+            { 
+              icon: <Lock size={24} />, 
+              title: "Military-Grade Security", 
+              desc: "Full AES-256 encryption at rest and in transit, with SOC2-compliant access controls." 
+            },
+            { 
+              icon: <Globe size={24} />, 
+              title: "Global Sync Hub", 
+              desc: "Distributed architecture ensures sub-50ms latency across global depots and warehouses." 
+            },
+            { 
+              icon: <ShieldCheck size={24} />, 
+              title: "99.99% Uptime SLA", 
+              desc: "Redundant clusters and autonomous failover mechanisms ensure zero-downtime operations." 
+            },
+            { 
+              icon: <Zap size={24} />, 
+              title: "Real-Time ERP Link", 
+              desc: "Seamlessly bridges SAP, Oracle, and Microsoft Dynamics with dedicated AI hooks." 
+            }
+          ].map((item, i) => (
+            <motion.div 
+              key={i}
+              className="security-card"
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: i * 0.1 }}
+            >
+              <div className="security-icon">{item.icon}</div>
+              <h4>{item.title}</h4>
+              <p>{item.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="footer-wrap">
+        <div className="footer-grid">
+          <div className="footer-col">
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, marginBottom: 20, letterSpacing: '-1.5px' }}>SANGRAHAK</h2>
+            <p className="feature-desc" style={{ maxWidth: 320 }}>
+              The autonomous intelligence engine for modern logistics and enterprise asset orchestration.
+            </p>
           </div>
-          <div className="footer-bottom">
-            &copy; {new Date().getFullYear()} SANGRAHAK Logistics Platform. All rights reserved.
+          <div className="footer-col">
+            <h4>Product</h4>
+            <a href="#">Features</a><a href="#">Security</a><a href="#">API</a>
           </div>
+          <div className="footer-col">
+            <h4>Company</h4>
+            <a href="#">About</a><a href="#">Blog</a><a href="#">Careers</a>
+          </div>
+          <div className="footer-col">
+            <h4>Support</h4>
+            <a href="#">Docs</a><a href="#">Status</a><a href="#">Contact</a>
+          </div>
+          <div className="footer-col">
+            <h4>Legal</h4>
+            <a href="#">Privacy</a><a href="#">Terms</a>
+          </div>
+        </div>
+        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', borderTop: '1px solid var(--border)', paddingTop: 40, display: 'flex', justifyContent: 'space-between' }}>
+          <span>© {new Date().getFullYear()} SANGRAHAK Inc.</span>
+          <div style={{ display: 'flex', gap: 32 }}><span>Twitter</span><span>LinkedIn</span><span>GitHub</span></div>
         </div>
       </footer>
     </div>
   );
-};
-
-export default LandingPage;
+}
